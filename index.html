@@ -333,7 +333,6 @@
                         Quay về danh sách Flashcard
                     </button>
                 </div>
-                <!-- Removed: <p id="noFlashcardSetSelectedMessage" class="text-gray-400 text-center hidden">Vui lòng chọn một bộ flashcard để bắt đầu học.</p> -->
             </div>
 
             <!-- Learn via Newsletter Section -->
@@ -418,7 +417,6 @@
         const prevFlashcardBtn = document.getElementById('prevFlashcardBtn');
         const nextFlashcardBtn = document.getElementById('nextFlashcardBtn');
         const flashcardCounter = document.getElementById('flashcardCounter');
-        // Removed: const noFlashcardSetSelectedMessage = document.getElementById('noFlashcardSetSelectedMessage');
         const flashcardPronounceBtn = document.getElementById('flashcardPronounceBtn'); // New: Pronounce button for flashcard
         const backToFlashcardListBtn = document.getElementById('backToFlashcardListBtn'); // New: Back button
 
@@ -429,7 +427,6 @@
         const selectedNewsletterContent = document.getElementById('selectedNewsletterContent'); // For review tab
         const noSelectedNewsletterContentMessage = document.getElementById('noSelectedNewsletterContentMessage'); // Changed message ID
         const backToNewsletterListBtn = document.getElementById('backToNewsletterListBtn'); // New: Back button
-        // const readNewsletterContentBtn = document.getElementById('readNewsletterContentBtn'); // Removed: Read Newsletter button
         const wordPopup = document.getElementById('wordPopup');
         const popupMeaning = document.getElementById('popupMeaning');
         const popupIPA = document.getElementById('popupIPA');
@@ -530,6 +527,17 @@
                 reviewTabBtn.classList.remove('bg-gray-700', 'text-gray-300', 'hover:bg-gray-600', 'hover:text-white');
                 createTabBtn.classList.remove('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'shadow-lg', 'transform', 'scale-105');
                 createTabBtn.classList.add('bg-gray-700', 'text-gray-300', 'hover:bg-gray-600', 'hover:text-white');
+
+                // When switching to review tab, ensure both lists are visible and learning areas are hidden
+                flashcardListContainer.classList.remove('hidden');
+                flashcardListContainer.classList.add('is-visible');
+                flashcardLearningArea.classList.add('hidden');
+                flashcardLearningArea.classList.remove('is-visible');
+
+                newsletterListContainer.classList.remove('hidden');
+                newsletterListContainer.classList.add('is-visible');
+                newsletterReadingArea.classList.add('hidden');
+                newsletterReadingArea.classList.remove('is-visible');
             }
         }
 
@@ -877,6 +885,13 @@
 
         function renderSavedFlashcards() {
             savedFlashcardGrid.innerHTML = ''; // Clear current grid
+            // Always ensure the list container is visible when this function is called
+            flashcardListContainer.classList.remove('hidden');
+            flashcardListContainer.classList.add('is-visible');
+            // Always ensure the learning area is hidden
+            flashcardLearningArea.classList.add('hidden');
+            flashcardLearningArea.classList.remove('is-visible');
+
             if (savedFlashcards.length > 0) {
                 noSavedFlashcardsMessage.classList.add('hidden');
                 savedFlashcards.forEach(set => {
@@ -908,11 +923,6 @@
                 });
             } else {
                 noSavedFlashcardsMessage.classList.remove('hidden');
-                // Ensure list container is visible if no cards, but learning area is hidden
-                flashcardListContainer.classList.remove('hidden');
-                flashcardListContainer.classList.add('is-visible');
-                flashcardLearningArea.classList.add('hidden');
-                flashcardLearningArea.classList.remove('is-visible');
             }
         }
 
@@ -922,7 +932,6 @@
             isFlipped = false;
             activeFlashcardSetId = null;
             flashcardDisplay.classList.add('hidden');
-            // Removed: noFlashcardSetSelectedMessage.classList.remove('hidden');
         }
 
         function updateFlashcardDisplay() {
@@ -1059,6 +1068,13 @@
 
         function renderSavedNewsletters() {
             savedNewsletterGrid.innerHTML = ''; // Clear current grid
+            // Always ensure the list container is visible when this function is called
+            newsletterListContainer.classList.remove('hidden');
+            newsletterListContainer.classList.add('is-visible');
+            // Always ensure the reading area is hidden
+            newsletterReadingArea.classList.add('hidden');
+            newsletterReadingArea.classList.remove('is-visible');
+
             if (savedNewsletters.length > 0) {
                 noSavedNewslettersMessage.classList.add('hidden');
                 savedNewsletters.forEach(nl => {
@@ -1089,11 +1105,6 @@
                 });
             } else {
                 noSavedNewslettersMessage.classList.remove('hidden');
-                // Ensure list container is visible if no newsletters, but reading area is hidden
-                newsletterListContainer.classList.remove('hidden');
-                newsletterListContainer.classList.add('is-visible');
-                newsletterReadingArea.classList.add('hidden');
-                newsletterReadingArea.classList.remove('is-visible');
             }
         }
 
