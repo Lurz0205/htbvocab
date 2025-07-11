@@ -31,12 +31,19 @@
             font-weight: bold;
             text-decoration: underline;
             cursor: pointer;
-            color: #8B5CF6; /* A purple shade for better visibility */
             position: relative; /* Needed for positioning the pronounce button inside */
             padding-right: 20px; /* Space for the speaker icon */
             display: inline-flex; /* To align icon with text baseline */
             align-items: baseline;
         }
+        /* Specific colors for word levels */
+        .highlighted-word.b2-level {
+            color: #60A5FA; /* blue-400 */
+        }
+        .highlighted-word.c1-c2-level {
+            color: #F87171; /* red-400 */
+        }
+
         .highlighted-word .pronounce-btn-inline {
             position: absolute;
             right: 0;
@@ -729,46 +736,83 @@
             generateNewsletterBtn.disabled = true;
 
             const newsletterTopic = newsletterTopicInput.value.trim();
-            // Explicitly tell AI not to use markdown and no introductory/concluding phrases
-            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `về chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. KHÔNG sử dụng bất kỳ định dạng Markdown nào như **bold** hay __underline__. KHÔNG bao gồm bất kỳ lời giới thiệu hay kết luận nào như "Here's a news bulletin", "In conclusion", "Okay, here's a news bulletin on...", "This report details...", "The following news report...", "Here is a brief news update...", "This newsletter focuses on...", "We're bringing you a report on...", "Here's an overview of...", "This article discusses...", "Below is a news piece on...", "This bulletin provides information on...", "Here's a summary of...", "In this report, we cover...". Chỉ cung cấp nội dung bản tin. Trong bản tin này, hãy sử dụng ít nhất 5-7 từ vựng trình độ C1/C2. Ngay sau mỗi từ vựng C1/C2, trong dấu ngoặc đơn, cung cấp nghĩa tiếng Việt và phiên âm IPA của từ đó. Ví dụ: "The ubiquitous (phổ biến - /juːˈbɪkwitəs/) nature of technology..." Đảm bảo các từ vựng được highlight không trùng lặp với các từ đã có trong các bộ flashcard đã lưu.`;
+
+            const schema = {
+                type: "OBJECT",
+                properties: {
+                    "newsletter_content": { "type": "STRING" },
+                    "vocabulary": {
+                        "type": "ARRAY",
+                        "items": {
+                            "type": "OBJECT",
+                            "properties": {
+                                "word": { "type": "STRING" },
+                                "meaning": { "type": "STRING" },
+                                "ipa": { "type": "STRING" },
+                                "level": { "type": "STRING", "enum": ["B2", "C1/C2"] }
+                            },
+                            "propertyOrdering": ["word", "meaning", "ipa", "level"]
+                        }
+                    }
+                }
+            };
+
+            // Construct the negative constraint for the prompt based on words already saved
+            const savedWordsForExclusion = savedFlashcards.flatMap(set => set.words.map(w => `"${w.word}"`))
+                                            .concat(savedNewsletters.flatMap(nl => {
+                                                const doc = new DOMParser().parseFromString(nl.content, 'text/html');
+                                                const highlightedSpans = doc.querySelectorAll('.highlighted-word');
+                                                return Array.from(highlightedSpans).map(span => {
+                                                    const tempSpan = document.createElement('span');
+                                                    tempSpan.innerHTML = span.innerHTML;
+                                                    const btn = tempSpan.querySelector('.pronounce-btn-inline');
+                                                    if (btn) btn.remove();
+                                                    return `"${tempSpan.textContent}"`;
+                                                });
+                                            })).join(', ');
+            const exclusionPrompt = savedWordsForExclusion ? `Không được trùng lặp với các từ sau: ${savedWordsForExclusion}. ` : '';
+
+
+            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `về chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. ${exclusionPrompt}Sau đó, liệt kê tất cả các từ vựng trình độ B2, C1, C2 trong bản tin đó, kèm theo nghĩa tiếng Việt, phiên âm IPA và cấp độ (B2 hoặc C1/C2). Trả về dưới dạng JSON với hai trường: 'newsletter_content' (nội dung bản tin thô) và 'vocabulary' (một mảng các đối tượng từ vựng).
+            Ví dụ JSON:
+            {
+              "newsletter_content": "The ubiquitous nature of technology has transformed our daily lives...",
+              "vocabulary": [
+                {
+                  "word": "ubiquitous",
+                  "meaning": "phổ biến",
+                  "ipa": "/juːˈbɪkwɪtəs/",
+                  "level": "C1/C2"
+                },
+                {
+                  "word": "transform",
+                  "meaning": "biến đổi",
+                  "ipa": "/trænsˈfɔːrm/",
+                  "level": "B2"
+                }
+              ]
+            }
+            `;
 
             try {
-                let text = await callGeminiAPI(prompt);
+                const data = await callGeminiAPI(prompt, schema);
+                let newsletterText = data.newsletter_content;
+                const vocabularyWords = data.vocabulary;
 
-                // Post-processing to remove common introductory phrases if AI still generates them
-                const introPhrases = [
-                    /^Okay, here's a news bulletin(?: on .*?)?:/i,
-                    /^Here's a short news report(?: on .*?)?:/i,
-                    /^News Bulletin: (?:.*?)?:/i,
-                    /^In this report, we cover(?:.*?)?:/i,
-                    /^This report details(?:.*?)?:/i,
-                    /^The following news report(?:.*?)?:/i,
-                    /^Here is a brief news update(?:.*?)?:/i,
-                    /^This newsletter focuses on(?:.*?)?:/i,
-                    /^We're bringing you a report on(?:.*?)?:/i,
-                    /^Here's an overview of(?:.*?)?:/i,
-                    /^This article discusses(?:.*?)?:/i,
-                    /^Below is a news piece on(?:.*?)?:/i,
-                    /^This bulletin provides information on(?:.*?)?:/i,
-                    /^Here's a summary of(?:.*?)?:/i,
-                    /^Here's a news bulletin, incorporating C1\/C2 vocabulary with definitions and IPA transcriptions: News Bulletin: /i // Specific phrase from user's image
-                ];
-                for (const phraseRegex of introPhrases) {
-                    text = text.replace(phraseRegex, '').trim();
-                }
+                // Sort words by length in descending order to avoid replacing substrings incorrectly
+                vocabularyWords.sort((a, b) => b.word.length - a.word.length);
 
-                // Regex to find words in "WORD (meaning - ipa)" format, and also handle potential markdown remnants
-                const processedText = text.replace(/(\*\*|__)?([A-Za-z'-]+)(\*\*|__)?\s*\(([^)]*?)\s*-\s*([^)]*?)\)/g, (match, preBold, word, postBold, meaning, ipa) => {
-                    // Clean the word from any markdown bold/underline remnants
-                    const cleanWord = word.replace(/\*\*|__/g, '');
-                    if (isDuplicateWordInSavedData(cleanWord)) { // Use the new function
-                        return cleanWord; // If duplicate, return plain word
-                    } else {
-                        // Wrap word in a span with data attributes for meaning and IPA, and add inline pronounce button
-                        return `<span class="highlighted-word" data-meaning="${meaning.trim()}" data-ipa="${ipa.trim()}">${cleanWord}<button class="pronounce-btn pronounce-btn-inline" data-word="${cleanWord}" title="Nghe phát âm">&#128266;</button></span>`;
+                for (const item of vocabularyWords) {
+                    const cleanWord = item.word;
+                    // Only highlight if the word is not already saved in another context
+                    if (!isDuplicateWordInSavedData(cleanWord)) {
+                        const levelClass = item.level === 'B2' ? 'b2-level' : 'c1-c2-level';
+                        // Use regex with word boundaries to replace only whole words
+                        const regex = new RegExp(`\\b${cleanWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi'); // Escape special characters
+                        newsletterText = newsletterText.replace(regex, `<span class="highlighted-word ${levelClass}" data-meaning="${item.meaning}" data-ipa="${item.ipa}">${cleanWord}<button class="pronounce-btn pronounce-btn-inline" data-word="${cleanWord}" title="Nghe phát âm">&#128266;</button></span>`);
                     }
-                });
-                generatedNewsletterHtml = processedText;
+                }
+                generatedNewsletterHtml = newsletterText;
                 renderGeneratedNewsletter();
             } catch (error) {
                 newsletterError.textContent = error.message;
