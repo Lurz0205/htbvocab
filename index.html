@@ -274,7 +274,7 @@
                         <span class="loading-spinner"></span> Đang tạo bản tin...
                     </p>
                     <p id="newsletterError" class="text-red-500 hidden"></p>
-                    <div id="newsletterContent" class="text-gray-300 leading-relaxed text-base bg-gray-700 p-4 rounded-md shadow-sm"></div>
+                    <div id="newsletterContent" class="text-gray-300 leading-relaxed text-base bg-gray-700 p-4 rounded-md shadow-sm hidden"></div> <!-- Added 'hidden' class here -->
                     <p id="noNewsletterMessage" class="text-gray-400">Chưa có bản tin nào được tạo. Nhập chủ đề và nhấn "Tạo"!</p>
                     <button id="saveNewsletterBtn" class="mt-6 w-full py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white font-bold rounded-lg shadow-lg hover:from-green-600 hover:to-teal-600 transition duration-300 transform hover:scale-105 btn-gradient-hover hidden">
                         Lưu Bản tin
@@ -333,7 +333,7 @@
                         Quay về danh sách Flashcard
                     </button>
                 </div>
-                <p id="noFlashcardSetSelectedMessage" class="text-gray-400 text-center hidden">Vui lòng chọn một bộ flashcard để bắt đầu học.</p>
+                <!-- Removed: <p id="noFlashcardSetSelectedMessage" class="text-gray-400 text-center hidden">Vui lòng chọn một bộ flashcard để bắt đầu học.</p> -->
             </div>
 
             <!-- Learn via Newsletter Section -->
@@ -418,7 +418,7 @@
         const prevFlashcardBtn = document.getElementById('prevFlashcardBtn');
         const nextFlashcardBtn = document.getElementById('nextFlashcardBtn');
         const flashcardCounter = document.getElementById('flashcardCounter');
-        const noFlashcardSetSelectedMessage = document.getElementById('noFlashcardSetSelectedMessage'); // Changed message ID
+        // Removed: const noFlashcardSetSelectedMessage = document.getElementById('noFlashcardSetSelectedMessage');
         const flashcardPronounceBtn = document.getElementById('flashcardPronounceBtn'); // New: Pronounce button for flashcard
         const backToFlashcardListBtn = document.getElementById('backToFlashcardListBtn'); // New: Back button
 
@@ -585,7 +585,6 @@
 
             const vocabTopic = vocabTopicInput.value.trim();
             const targetWordCount = 10;
-            const maxAttempts = 5; // Tăng số lần thử để bù đắp từ trùng lặp
             let currentGeneratedWords = [];
             
             const schema = {
@@ -603,40 +602,39 @@
             };
 
             try {
-                for (let attempt = 0; attempt < maxAttempts; attempt++) {
-                    const wordsNeeded = targetWordCount - currentGeneratedWords.length;
-                    if (wordsNeeded <= 0) {
-                        break; // Đã đủ số lượng từ
+                // Initial request for words
+                let prompt = `Tạo một danh sách ${targetWordCount} từ vựng tiếng Anh trình độ C1/C2 ${vocabTopic ? `liên quan đến chủ đề "${vocabTopic}"` : 'ngẫu nhiên'}. Với mỗi từ, cung cấp nghĩa tiếng Việt, phiên âm IPA và một câu ví dụ. Định dạng JSON như sau:
+                [
+                  {
+                    "word": "Từ vựng",
+                    "meaning": "Nghĩa tiếng Việt",
+                    "ipa": "Phiên âm IPA",
+                    "example": "Câu ví dụ"
+                  }
+                ]
+                `;
+                let data = await callGeminiAPI(prompt, schema);
+                
+                for (const item of data) {
+                    if (!isDuplicateWord(item.word)) {
+                        currentGeneratedWords.push(item);
                     }
+                }
 
-                    // Yêu cầu nhiều từ hơn một chút để bù đắp các từ trùng lặp
-                    const requestCount = wordsNeeded + 3; // Yêu cầu thêm 3 từ mỗi lần thử
-                    const prompt = `Tạo một danh sách ${requestCount} từ vựng tiếng Anh trình độ C1/C2 ${vocabTopic ? `liên quan đến chủ đề "${vocabTopic}"` : 'ngẫu nhiên'}. Với mỗi từ, cung cấp nghĩa tiếng Việt, phiên âm IPA và một câu ví dụ. Định dạng JSON như sau:
-                    [
-                      {
-                        "word": "Từ vựng",
-                        "meaning": "Nghĩa tiếng Việt",
-                        "ipa": "Phiên âm IPA",
-                        "example": "Câu ví dụ"
-                      }
-                    ]
-                    `;
-
-                    const data = await callGeminiAPI(prompt, schema);
-                    
+                // If not enough unique words, try to generate more
+                let attempts = 0;
+                const maxAttempts = 3; // Limit additional attempts
+                while (currentGeneratedWords.length < targetWordCount && attempts < maxAttempts) {
+                    const wordsNeeded = targetWordCount - currentGeneratedWords.length;
+                    prompt = `Tạo thêm ${wordsNeeded + 2} từ vựng tiếng Anh trình độ C1/C2 ${vocabTopic ? `liên quan đến chủ đề "${vocabTopic}"` : 'ngẫu nhiên'}. Các từ này không được trùng lặp với các từ sau: ${currentGeneratedWords.map(w => w.word).join(', ')}. Định dạng JSON tương tự như trước.`;
+                    data = await callGeminiAPI(prompt, schema);
                     for (const item of data) {
-                        if (currentGeneratedWords.length >= targetWordCount) {
-                            break; // Dừng thêm nếu đã đạt số lượng mục tiêu
-                        }
-                        // Kiểm tra từ trùng lặp với các từ đã tạo trong phiên này và các bộ flashcard đã lưu
+                        if (currentGeneratedWords.length >= targetWordCount) break;
                         if (!currentGeneratedWords.some(w => w.word.toLowerCase() === item.word.toLowerCase()) && !isDuplicateWord(item.word)) {
                             currentGeneratedWords.push(item);
                         }
                     }
-
-                    if (currentGeneratedWords.length === targetWordCount) {
-                        break; // Đã tạo đủ số lượng từ mục tiêu
-                    }
+                    attempts++;
                 }
 
                 generatedVocab = currentGeneratedWords;
@@ -924,7 +922,7 @@
             isFlipped = false;
             activeFlashcardSetId = null;
             flashcardDisplay.classList.add('hidden');
-            noFlashcardSetSelectedMessage.classList.remove('hidden');
+            // Removed: noFlashcardSetSelectedMessage.classList.remove('hidden');
         }
 
         function updateFlashcardDisplay() {
