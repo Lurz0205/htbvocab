@@ -856,8 +856,8 @@
                     }
                 }
                 
-                // Add expressive icons to the newsletter content
-                generatedNewsletterHtml = addExpressiveIconsToNewsletter(newsletterText, newsletterTopic);
+                // Removed the call to addExpressiveIconsToNewsletter
+                generatedNewsletterHtml = newsletterText;
 
                 // Store title and icon along with content
                 newsletterContentDiv.dataset.title = defaultNewsletterTitle;
@@ -873,62 +873,8 @@
             }
         });
 
-        // New function to add expressive icons
-        function addExpressiveIconsToNewsletter(htmlContent, topic) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(htmlContent, 'text/html');
-            const paragraphs = doc.querySelectorAll('p');
-
-            const topicEmojis = {
-                'công nghệ': ['💻', '🤖', '💡', '📡'],
-                'technology': ['💻', '🤖', '💡', '📡'],
-                'môi trường': ['🌳', '🌍', '♻️', '🌱', '💧'],
-                'environment': ['🌳', '🌍', '♻️', '🌱', '💧'],
-                'kinh tế': ['📈', '💰', '📊', '💼', '🏦'],
-                'economy': ['📈', '💰', '📊', '💼', '🏦'],
-                'khoa học': ['🔬', '🧪', '🔭', '🧬', '⚛️'],
-                'science': ['🔬', '🧪', '🔭', '🧬', '⚛️'],
-                'y tế': ['🏥', '💊', '🩺', '❤️', '🩹'],
-                'health': ['🏥', '💊', '🩺', '❤️', '🩹'],
-                'giáo dục': ['📚', '🎓', '✏️', '🏫', '🧠'],
-                'education': ['📚', '🎓', '✏️', '🏫', '🧠'],
-                'nghệ thuật': ['🎨', '🎭', '🎶', '🎬', '🖼️'],
-                'art': ['🎨', '🎭', '🎶', '🎬', '🖼️'],
-                'du lịch': ['✈️', '🗺️', '📸', '🏖️', '⛰️'],
-                'travel': ['✈️', '🗺️', '📸', '🏖️', '⛰️'],
-                'xã hội': ['🤝', '🧑‍🤝‍🧑', '🌐', '🗣️', '🫂'],
-                'society': ['🤝', '🧑‍🤝‍🧑', '🌐', '🗣️', '🫂'],
-                'general': ['✨', '🌟', '💡', '🚀', '🌈', '🎉', '💬', '✍️'] // General fallback emojis
-            };
-
-            const lowerTopic = topic.toLowerCase();
-            let emojis = topicEmojis['general'];
-            for (const key in topicEmojis) {
-                if (lowerTopic.includes(key)) {
-                    emojis = topicEmojis[key];
-                    break;
-                }
-            }
-
-            paragraphs.forEach((p, index) => {
-                // Only add icons to paragraphs that have content and are not just empty
-                if (p.textContent.trim().length > 0) {
-                    // Get a random emoji from the selected list
-                    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-                    
-                    // Create a span for the emoji to give it some margin
-                    const emojiSpan = doc.createElement('span');
-                    emojiSpan.textContent = randomEmoji;
-                    emojiSpan.style.marginRight = '0.5rem'; // Add some space after the emoji
-                    emojiSpan.style.verticalAlign = 'middle'; // Align with text baseline
-
-                    // Insert the emoji at the beginning of the paragraph
-                    p.prepend(emojiSpan);
-                }
-            });
-
-            return doc.body.innerHTML;
-        }
+        // Removed the addExpressiveIconsToNewsletter function entirely
+        // function addExpressiveIconsToNewsletter(htmlContent, topic) { ... }
 
         function renderGeneratedNewsletter() {
             if (generatedNewsletterHtml) {
@@ -1196,7 +1142,7 @@
 
         // Function to read a newsletter
         function readNewsletter(nlId) {
-            const selectedNewsletter = savedNewsletters.find(nl => s.id === nlId);
+            const selectedNewsletter = savedNewsletters.find(s => s.id === nlId);
             if (selectedNewsletter) {
                 activeNewsletterId = nlId; // Set the active newsletter
                 
