@@ -481,9 +481,10 @@
             }
         }
 
-        // --- Check for duplicate words across all saved flashcards and newsletters ---
-        function isDuplicateWord(wordToCheck) {
+        // --- Check for duplicate words in saved data (flashcards and newsletters) ---
+        function isDuplicateWordInSavedData(wordToCheck) {
             const lowerCaseWord = wordToCheck.toLowerCase();
+
             // Check in saved flashcards
             const flashcardWords = savedFlashcards.flatMap(set => set.words.map(w => w.word.toLowerCase()));
             if (flashcardWords.includes(lowerCaseWord)) {
@@ -593,7 +594,7 @@
 
             const vocabTopic = vocabTopicInput.value.trim();
             const targetWordCount = 10;
-            let currentGeneratedWords = [];
+            let currentGeneratedWordsForSession = []; // Tracks words generated in *this session* (multiple clicks)
             
             const schema = {
                 type: "ARRAY",
@@ -610,42 +611,50 @@
             };
 
             try {
-                // Initial request for words
-                let prompt = `Tạo một danh sách ${targetWordCount} từ vựng tiếng Anh trình độ C1/C2 ${vocabTopic ? `liên quan đến chủ đề "${vocabTopic}"` : 'ngẫu nhiên'}. Với mỗi từ, cung cấp nghĩa tiếng Việt, phiên âm IPA và một câu ví dụ. Định dạng JSON như sau:
-                [
-                  {
-                    "word": "Từ vựng",
-                    "meaning": "Nghĩa tiếng Việt",
-                    "ipa": "Phiên âm IPA",
-                    "example": "Câu ví dụ"
-                  }
-                ]
-                `;
-                let data = await callGeminiAPI(prompt, schema);
-                
-                for (const item of data) {
-                    if (!isDuplicateWord(item.word)) {
-                        currentGeneratedWords.push(item);
+                for (let attempt = 0; attempt < 5; attempt++) { // Max 5 attempts to get all words
+                    const wordsNeeded = targetWordCount - currentGeneratedWordsForSession.length;
+                    if (wordsNeeded <= 0) {
+                        break; // Already have enough words
                     }
-                }
 
-                // If not enough unique words, try to generate more
-                let attempts = 0;
-                const maxAttempts = 3; // Limit additional attempts
-                while (currentGeneratedWords.length < targetWordCount && attempts < maxAttempts) {
-                    const wordsNeeded = targetWordCount - currentGeneratedWords.length;
-                    prompt = `Tạo thêm ${wordsNeeded + 2} từ vựng tiếng Anh trình độ C1/C2 ${vocabTopic ? `liên quan đến chủ đề "${vocabTopic}"` : 'ngẫu nhiên'}. Các từ này không được trùng lặp với các từ sau: ${currentGeneratedWords.map(w => w.word).join(', ')}. Định dạng JSON tương tự như trước.`;
-                    data = await callGeminiAPI(prompt, schema);
+                    const requestCount = wordsNeeded + 3; // Request a few more than needed to account for potential duplicates
+                    
+                    // Construct the negative constraint for the prompt based on words already collected in this session
+                    const wordsToExcludeFromLLM = currentGeneratedWordsForSession.map(w => `"${w.word}"`).join(', ');
+                    const exclusionPrompt = wordsToExcludeFromLLM ? `Không được trùng lặp với các từ sau: ${wordsToExcludeFromLLM}. ` : '';
+
+                    const prompt = `Tạo một danh sách ${requestCount} từ vựng tiếng Anh trình độ C1/C2 ${vocabTopic ? `liên quan đến chủ đề "${vocabTopic}"` : 'ngẫu nhiên'}. ${exclusionPrompt}Với mỗi từ, cung cấp nghĩa tiếng Việt, phiên âm IPA và một câu ví dụ. Định dạng JSON như sau:
+                    [
+                      {
+                        "word": "Từ vựng",
+                        "meaning": "Nghĩa tiếng Việt",
+                        "ipa": "Phiên âm IPA",
+                        "example": "Câu ví dụ"
+                      }
+                    ]
+                    `;
+
+                    const data = await callGeminiAPI(prompt, schema);
+                    
                     for (const item of data) {
-                        if (currentGeneratedWords.length >= targetWordCount) break;
-                        if (!currentGeneratedWords.some(w => w.word.toLowerCase() === item.word.toLowerCase()) && !isDuplicateWord(item.word)) {
-                            currentGeneratedWords.push(item);
+                        if (currentGeneratedWordsForSession.length >= targetWordCount) {
+                            break; // Stop if target reached during this batch
+                        }
+                        // Check against words already collected in *this session* AND against *saved* words
+                        const isAlreadyInSession = currentGeneratedWordsForSession.some(w => w.word.toLowerCase() === item.word.toLowerCase());
+                        const isAlreadySaved = isDuplicateWordInSavedData(item.word);
+
+                        if (!isAlreadyInSession && !isAlreadySaved) {
+                            currentGeneratedWordsForSession.push(item);
                         }
                     }
-                    attempts++;
+
+                    if (currentGeneratedWordsForSession.length === targetWordCount) {
+                        break;
+                    }
                 }
 
-                generatedVocab = currentGeneratedWords;
+                generatedVocab = currentGeneratedWordsForSession; // Assign the collected words to the global variable
                 renderGeneratedVocab();
 
                 if (generatedVocab.length < targetWordCount) {
@@ -721,7 +730,7 @@
 
             const newsletterTopic = newsletterTopicInput.value.trim();
             // Explicitly tell AI not to use markdown and no introductory/concluding phrases
-            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `liên quan đến chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. KHÔNG sử dụng bất kỳ định dạng Markdown nào như **bold** hay __underline__. KHÔNG bao gồm bất kỳ lời giới thiệu hay kết luận nào như "Here's a news bulletin", "In conclusion", "Okay, here's a news bulletin on...", "This report details...", "The following news report...", "Here is a brief news update...", "This newsletter focuses on...", "We're bringing you a report on...", "Here's an overview of...", "This article discusses...", "Below is a news piece on...", "This bulletin provides information on...", "Here's a summary of...", "In this report, we cover...". Chỉ cung cấp nội dung bản tin. Trong bản tin này, hãy sử dụng ít nhất 5-7 từ vựng trình độ C1/C2. Ngay sau mỗi từ vựng C1/C2, trong dấu ngoặc đơn, cung cấp nghĩa tiếng Việt và phiên âm IPA của từ đó. Ví dụ: "The ubiquitous (phổ biến - /juːˈbɪkwitəs/) nature of technology..." Đảm bảo các từ vựng được highlight không trùng lặp với các từ đã có trong các bộ flashcard đã lưu.`;
+            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `về chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. KHÔNG sử dụng bất kỳ định dạng Markdown nào như **bold** hay __underline__. KHÔNG bao gồm bất kỳ lời giới thiệu hay kết luận nào như "Here's a news bulletin", "In conclusion", "Okay, here's a news bulletin on...", "This report details...", "The following news report...", "Here is a brief news update...", "This newsletter focuses on...", "We're bringing you a report on...", "Here's an overview of...", "This article discusses...", "Below is a news piece on...", "This bulletin provides information on...", "Here's a summary of...", "In this report, we cover...". Chỉ cung cấp nội dung bản tin. Trong bản tin này, hãy sử dụng ít nhất 5-7 từ vựng trình độ C1/C2. Ngay sau mỗi từ vựng C1/C2, trong dấu ngoặc đơn, cung cấp nghĩa tiếng Việt và phiên âm IPA của từ đó. Ví dụ: "The ubiquitous (phổ biến - /juːˈbɪkwitəs/) nature of technology..." Đảm bảo các từ vựng được highlight không trùng lặp với các từ đã có trong các bộ flashcard đã lưu.`;
 
             try {
                 let text = await callGeminiAPI(prompt);
@@ -752,7 +761,7 @@
                 const processedText = text.replace(/(\*\*|__)?([A-Za-z'-]+)(\*\*|__)?\s*\(([^)]*?)\s*-\s*([^)]*?)\)/g, (match, preBold, word, postBold, meaning, ipa) => {
                     // Clean the word from any markdown bold/underline remnants
                     const cleanWord = word.replace(/\*\*|__/g, '');
-                    if (isDuplicateWord(cleanWord)) {
+                    if (isDuplicateWordInSavedData(cleanWord)) { // Use the new function
                         return cleanWord; // If duplicate, return plain word
                     } else {
                         // Wrap word in a span with data attributes for meaning and IPA, and add inline pronounce button
@@ -852,6 +861,9 @@
                 currentFlashcardIndex = 0;
                 isFlipped = false;
                 activeFlashcardSetId = setId; // Set the active set
+                
+                // Ensure flashcardDisplay is visible
+                flashcardDisplay.classList.remove('hidden'); 
                 updateFlashcardDisplay();
                 
                 // Hide newsletter sections if they are visible
@@ -931,7 +943,7 @@
             currentFlashcardIndex = 0;
             isFlipped = false;
             activeFlashcardSetId = null;
-            flashcardDisplay.classList.add('hidden');
+            flashcardDisplay.classList.add('hidden'); // Ensure it's hidden when resetting
         }
 
         function updateFlashcardDisplay() {
@@ -1026,8 +1038,10 @@
             const selectedNewsletter = savedNewsletters.find(nl => nl.id === nlId);
             if (selectedNewsletter) {
                 activeNewsletterId = nlId; // Set the active newsletter
+                
+                // Ensure selectedNewsletterContent is visible
+                selectedNewsletterContent.classList.remove('hidden'); 
                 selectedNewsletterContent.innerHTML = selectedNewsletter.content;
-                selectedNewsletterContent.classList.remove('hidden');
                 noSelectedNewsletterContentMessage.classList.add('hidden');
                 
                 // Hide flashcard sections if they are visible
@@ -1111,7 +1125,7 @@
         function resetNewsletterDisplay() {
             activeNewsletterId = null;
             selectedNewsletterContent.innerHTML = '';
-            selectedNewsletterContent.classList.add('hidden');
+            selectedNewsletterContent.classList.add('hidden'); // Ensure it's hidden when resetting
             noSelectedNewsletterContentMessage.classList.remove('hidden');
         }
 
