@@ -32,7 +32,21 @@
             text-decoration: underline;
             cursor: pointer;
             color: #8B5CF6; /* A purple shade for better visibility */
+            position: relative; /* Needed for positioning the pronounce button inside */
+            padding-right: 20px; /* Space for the speaker icon */
+            display: inline-flex; /* To align icon with text baseline */
+            align-items: baseline;
         }
+        .highlighted-word .pronounce-btn-inline {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.9em; /* Smaller icon for inline */
+            margin-left: 0; /* Remove default margin */
+            line-height: 1; /* Align with text */
+        }
+
         /* Custom Alert Modal Styles */
         .custom-alert-overlay {
             position: fixed;
@@ -144,6 +158,27 @@
         main {
             position: relative;
             min-height: 500px; /* Ensure main has enough height for content */
+        }
+
+        /* Popup for word meaning - Fixed position for better alignment */
+        #wordPopup {
+            position: fixed; /* Changed to fixed */
+            z-index: 1001; /* Higher than overlay */
+            padding: 0.75rem 1rem; /* Adjusted padding */
+            background-color: #6d28d9; /* purple-700 */
+            color: white;
+            border-radius: 0.5rem; /* Adjusted border-radius */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            border: 1px solid #8B5CF6; /* purple-500 */
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            transform: translateY(-5px); /* Slight initial offset for transition */
+            opacity: 0;
+            visibility: hidden;
+        }
+        #wordPopup.is-visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
         }
     </style>
 </head>
@@ -291,11 +326,7 @@
                 </div>
 
                 <div id="newsletterReadingArea" class="hidden"> <!-- New: Area for active newsletter reading -->
-                    <div class="flex justify-end mb-4">
-                        <button id="readNewsletterContentBtn" class="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-md hover:from-blue-600 hover:to-cyan-600 transition duration-300 btn-gradient-hover" title="Đọc bản tin">
-                            Đọc Bản Tin &#128266;
-                        </button>
-                    </div>
+                    <!-- Removed "Đọc Bản Tin" button -->
                     <div id="selectedNewsletterContent" class="text-gray-300 leading-relaxed text-base bg-gray-800 p-4 rounded-md shadow-inner"></div>
                     <p id="noSelectedNewsletterContentMessage" class="text-gray-400 text-center hidden">Vui lòng chọn một bản tin để đọc và học.</p>
                     <button id="backToNewsletterListBtn" class="mt-6 w-full py-3 bg-gray-600 text-white font-bold rounded-lg shadow-lg hover:bg-gray-500 transition duration-300 transform hover:scale-105 btn-gradient-hover">
@@ -303,7 +334,7 @@
                     </button>
                 </div>
                 <!-- Pop-up for word meaning -->
-                <div id="wordPopup" class="absolute z-10 p-3 bg-purple-700 text-white rounded-lg shadow-xl border border-purple-500 hidden">
+                <div id="wordPopup" class="word-popup p-3 bg-purple-700 text-white rounded-lg shadow-xl border border-purple-500 hidden">
                     <p id="popupMeaning" class="font-bold"></p>
                     <p id="popupIPA" class="text-sm italic"></p>
                 </div>
@@ -377,7 +408,7 @@
         const selectedNewsletterContent = document.getElementById('selectedNewsletterContent'); // For review tab
         const noSelectedNewsletterContentMessage = document.getElementById('noSelectedNewsletterContentMessage'); // Changed message ID
         const backToNewsletterListBtn = document.getElementById('backToNewsletterListBtn'); // New: Back button
-        const readNewsletterContentBtn = document.getElementById('readNewsletterContentBtn'); // New: Read Newsletter button
+        // const readNewsletterContentBtn = document.getElementById('readNewsletterContentBtn'); // Removed: Read Newsletter button
         const wordPopup = document.getElementById('wordPopup');
         const popupMeaning = document.getElementById('popupMeaning');
         const popupIPA = document.getElementById('popupIPA');
@@ -690,8 +721,8 @@
                     if (isDuplicateWord(cleanWord)) {
                         return cleanWord; // If duplicate, return plain word
                     } else {
-                        // Wrap word in a span with data attributes for meaning and IPA, and apply inline styles
-                        return `<span class="highlighted-word" data-meaning="${meaning.trim()}" data-ipa="${ipa.trim()}">${cleanWord}</span>`;
+                        // Wrap word in a span with data attributes for meaning and IPA, and add inline pronounce button
+                        return `<span class="highlighted-word" data-meaning="${meaning.trim()}" data-ipa="${ipa.trim()}">${cleanWord}<button class="pronounce-btn pronounce-btn-inline" data-word="${cleanWord}" title="Nghe phát âm">&#128266;</button></span>`;
                     }
                 });
                 generatedNewsletterHtml = processedText;
@@ -711,6 +742,14 @@
                 newsletterContentDiv.classList.remove('hidden');
                 noNewsletterMessage.classList.add('hidden');
                 saveNewsletterBtn.classList.remove('hidden');
+                // Attach event listeners to newly created inline pronounce buttons
+                newsletterContentDiv.querySelectorAll('.pronounce-btn-inline').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        event.stopPropagation(); // Prevent popup from showing when clicking pronounce button
+                        const wordToSpeak = event.target.dataset.word;
+                        speakWord(wordToSpeak);
+                    });
+                });
             } else {
                 newsletterContentDiv.innerHTML = '';
                 newsletterContentDiv.classList.add('hidden');
@@ -953,6 +992,14 @@
                 setTimeout(() => {
                     newsletterReadingArea.classList.remove('hidden');
                     newsletterReadingArea.classList.add('is-visible'); // Show the reading area with transition
+                    // Attach event listeners to newly created inline pronounce buttons in the reading area
+                    selectedNewsletterContent.querySelectorAll('.pronounce-btn-inline').forEach(button => {
+                        button.addEventListener('click', (event) => {
+                            event.stopPropagation(); // Prevent popup from showing when clicking pronounce button
+                            const wordToSpeak = event.target.dataset.word;
+                            speakWord(wordToSpeak);
+                        });
+                    });
                 }, 500); // Delay matches transition duration
             }
         }
@@ -969,11 +1016,11 @@
             }, 500); // Delay matches transition duration
         });
 
-        // Event listener for the "Đọc Bản Tin" button
-        readNewsletterContentBtn.addEventListener('click', () => {
-            const contentToSpeak = selectedNewsletterContent.textContent;
-            speakWord(contentToSpeak, 'en-US'); // Assuming newsletter is in English
-        });
+        // Removed: Event listener for the "Đọc Bản Tin" button
+        // readNewsletterContentBtn.addEventListener('click', () => {
+        //     const contentToSpeak = selectedNewsletterContent.textContent;
+        //     speakWord(contentToSpeak, 'en-US'); // Assuming newsletter is in English
+        // });
 
 
         function renderSavedNewsletters() {
@@ -1023,20 +1070,26 @@
         // Function to handle word clicks (used by both newsletterContentDiv and selectedNewsletterContent)
         function handleWordClick(event) {
             const target = event.target;
-            if (target.classList.contains('highlighted-word')) {
+            // Ensure click is on the highlighted word itself, not the pronounce button inside it
+            if (target.classList.contains('highlighted-word') && !target.classList.contains('pronounce-btn-inline')) {
                 const meaning = target.dataset.meaning;
                 const ipa = target.dataset.ipa;
 
                 popupMeaning.textContent = meaning;
                 popupIPA.textContent = ipa;
 
-                // Position the popup
+                // Position the popup using fixed positioning relative to the viewport
                 const rect = target.getBoundingClientRect();
-                wordPopup.style.left = `${rect.left + window.scrollX}px`;
-                wordPopup.style.top = `${rect.top + window.scrollY + rect.height + 5}px`;
+                wordPopup.style.left = `${rect.left}px`;
+                wordPopup.style.top = `${rect.bottom + 5}px`; // 5px below the word
+                
                 wordPopup.classList.remove('hidden');
-            } else {
-                wordPopup.classList.add('hidden'); // Hide popup if click outside highlighted word
+                wordPopup.classList.add('is-visible'); // Trigger transition
+            } else if (!target.classList.contains('pronounce-btn-inline')) { // Hide if click outside highlighted word or its pronounce button
+                wordPopup.classList.remove('is-visible'); // Trigger transition
+                setTimeout(() => {
+                    wordPopup.classList.add('hidden');
+                }, 200); // Delay matches transition duration
             }
         }
 
@@ -1047,8 +1100,12 @@
 
         // Hide popup when clicking anywhere else on the document
         document.addEventListener('click', (event) => {
-            if (!wordPopup.contains(event.target) && !event.target.classList.contains('highlighted-word') && !wordPopup.classList.contains('hidden')) {
-                wordPopup.classList.add('hidden');
+            // Check if the click was not inside the popup AND not on a highlighted word AND not on an inline pronounce button
+            if (!wordPopup.contains(event.target) && !event.target.classList.contains('highlighted-word') && !event.target.classList.contains('pronounce-btn-inline') && wordPopup.classList.contains('is-visible')) {
+                wordPopup.classList.remove('is-visible');
+                setTimeout(() => {
+                    wordPopup.classList.add('hidden');
+                }, 200);
             }
         });
 
