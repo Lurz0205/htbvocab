@@ -175,7 +175,7 @@
         #wordPopup {
             position: absolute; /* Changed from fixed to absolute */
             z-index: 1001; /* Higher than overlay */
-            padding: 0.75rem 1rem; /* Adjusted padding */
+            padding: 0.5rem 0.75rem; /* Adjusted padding - made smaller */
             background-color: #6d28d9; /* purple-700 */
             color: white;
             border-radius: 0.5rem; /* Adjusted border-radius */
@@ -185,6 +185,8 @@
             transform: translateY(-5px); /* Slight initial offset for transition */
             opacity: 0;
             visibility: hidden;
+            max-width: 250px; /* Added max-width */
+            word-wrap: break-word; /* Ensure long words wrap */
         }
         #wordPopup.is-visible {
             opacity: 1;
@@ -732,7 +734,7 @@
                 noVocabMessage.classList.remove('hidden');
                 saveFlashcardsBtn.classList.add('hidden');
             }
-        }
+        });
 
         // --- Generate Newsletter Function ---
         generateNewsletterBtn.addEventListener('click', async () => {
@@ -1121,7 +1123,7 @@
 
         // Function to read a newsletter
         function readNewsletter(nlId) {
-            const selectedNewsletter = savedNewsletters.find(nl => nl.id === nlId);
+            const selectedNewsletter = savedNewsletters.find(nl => s.id === nlId);
             if (selectedNewsletter) {
                 activeNewsletterId = nlId; // Set the active newsletter
                 
@@ -1131,7 +1133,7 @@
                 noSelectedNewsletterContentMessage.classList.add('hidden');
                 
                 // Display newsletter title and icon
-                newsletterTitleDisplay.innerHTML = `${selectedNewsletter.icon} ${selectedNewsletter.name}`;
+                newsletterTitleDisplay.innerHTML = `${selectedNewsletter.icon} <span class="ml-2">${selectedNewsletter.name}</span>`;
                 newsletterTitleDisplay.classList.remove('hidden');
 
                 // Hide flashcard sections if they are visible
@@ -1251,7 +1253,7 @@
 
                 // Position relative to the document, considering scroll position
                 wordPopup.style.left = `${popupLeft + window.scrollX}px`;
-                wordPopup.style.top = `${rect.bottom + window.scrollY + 5}px`; // 5px below the word
+                wordPopup.style.top = `${rect.bottom + window.scrollY + 2}px`; // Reduced vertical offset to 2px
                 
                 // Add click effect to the word itself
                 target.classList.add('clicked-effect');
