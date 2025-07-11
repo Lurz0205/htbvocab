@@ -1233,45 +1233,46 @@
             if (target.classList.contains('highlighted-word')) {
                 const meaning = target.dataset.meaning;
                 const ipa = target.dataset.ipa;
-                const partOfSpeech = target.dataset.partOfSpeech; // New: Get part of speech
+                const partOfSpeech = target.dataset.partOfSpeech;
                 const wordToSpeak = target.textContent;
 
                 speakWord(wordToSpeak);
 
                 popupMeaning.textContent = meaning;
                 popupIPA.textContent = ipa;
-                popupPartOfSpeech.textContent = `(${partOfSpeech})`; // New: Set part of speech, add parentheses
+                popupPartOfSpeech.textContent = `(${partOfSpeech})`;
 
                 const targetRect = target.getBoundingClientRect();
-                
+                const mainRect = main.getBoundingClientRect(); // Get main element's rect
+
                 wordPopup.classList.remove('hidden');
                 wordPopup.classList.add('is-visible');
                 const popupWidth = wordPopup.offsetWidth; 
                 const popupHeight = wordPopup.offsetHeight;
 
-                // Calculate left position relative to the viewport
-                let popupLeft = targetRect.left + (targetRect.width / 2) - (popupWidth / 2);
+                // Calculate initial left position relative to the main content area
+                let popupLeft = (targetRect.left + (targetRect.width / 2)) - (popupWidth / 2) - mainRect.left;
                 
-                // Adjust for viewport left boundary
-                if (popupLeft < 10) {
-                    popupLeft = 10;
+                // Adjust for main content area's left boundary (relative to main)
+                if (popupLeft < 0) { // If it goes beyond main's left edge
+                    popupLeft = 0;
                 }
-                // Adjust for viewport right boundary
-                if (popupLeft + popupWidth > window.innerWidth - 10) {
-                    popupLeft = window.innerWidth - popupWidth - 10;
+                // Adjust for main content area's right boundary (relative to main)
+                if (popupLeft + popupWidth > mainRect.width) {
+                    popupLeft = mainRect.width - popupWidth;
                 }
 
-                // Calculate top position relative to the viewport
+                // Calculate initial top position relative to the main content area
                 let popupTop;
-                const spaceAbove = targetRect.top - popupHeight - 5; // 5px padding
-                const spaceBelow = window.innerHeight - targetRect.bottom - popupHeight - 5;
+                const spaceAbove = targetRect.top - popupHeight - 5 - mainRect.top; // Space above target, relative to main's top
+                const spaceBelow = mainRect.bottom - targetRect.bottom - popupHeight - 5; // Space below target, relative to main's bottom
 
                 if (spaceAbove >= 0) { // Enough space above
-                    popupTop = targetRect.top - popupHeight - 5;
+                    popupTop = targetRect.top - popupHeight - 5 - mainRect.top;
                 } else if (spaceBelow >= 0) { // Not enough space above, but enough below
-                    popupTop = targetRect.bottom + 5;
+                    popupTop = targetRect.bottom + 5 - mainRect.top;
                 } else { // Not enough space either way, just place below
-                    popupTop = targetRect.bottom + 5;
+                    popupTop = targetRect.bottom + 5 - mainRect.top;
                 }
 
                 // Apply positioning to the popup
