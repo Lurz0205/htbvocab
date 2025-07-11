@@ -85,6 +85,28 @@
         .pronounce-btn:hover {
             color: #c4b5fd; /* purple-300 */
         }
+
+        /* Gradient Hover Effect for Buttons */
+        .btn-gradient-hover {
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+        .btn-gradient-hover::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.0) 50%, rgba(255,255,255,0.1) 100%);
+            transform: translateX(-100%);
+            transition: transform 0.5s ease-out;
+            z-index: -1;
+        }
+        .btn-gradient-hover:hover::before {
+            transform: translateX(0%);
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gray-900 text-white p-4 sm:p-6 lg:p-8">
@@ -129,7 +151,7 @@
                 <h3 class="text-2xl font-semibold text-white mb-4 border-b border-gray-600 pb-3">1. Tạo Bộ từ vựng & Flashcard</h3>
                 <div class="flex flex-col sm:flex-row gap-4 mb-4">
                     <input type="text" id="vocabTopicInput" placeholder="Nhập chủ đề (ví dụ: 'Khoa học', 'Kinh tế') hoặc để trống để ngẫu nhiên" class="flex-1 p-3 rounded-md bg-gray-900 text-white border border-gray-600 focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50 placeholder-gray-500">
-                    <button id="generateVocabBtn" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-lg shadow-md hover:from-blue-600 hover:to-cyan-600 transition duration-300 transform hover:scale-105">
+                    <button id="generateVocabBtn" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-lg shadow-md hover:from-blue-600 hover:to-cyan-600 transition duration-300 transform hover:scale-105 btn-gradient-hover">
                         Tạo Từ Vựng
                     </button>
                 </div>
@@ -139,7 +161,7 @@
                     <p id="vocabError" class="text-red-500 hidden"></p>
                     <ul id="vocabList" class="space-y-3"></ul>
                     <p id="noVocabMessage" class="text-gray-400">Chưa có từ vựng nào được tạo. Nhập chủ đề và nhấn "Tạo"!</p>
-                    <button id="saveFlashcardsBtn" class="mt-6 w-full py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white font-bold rounded-lg shadow-lg hover:from-green-600 hover:to-teal-600 transition duration-300 transform hover:scale-105 hidden">
+                    <button id="saveFlashcardsBtn" class="mt-6 w-full py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white font-bold rounded-lg shadow-lg hover:from-green-600 hover:to-teal-600 transition duration-300 transform hover:scale-105 btn-gradient-hover hidden">
                         Lưu thành Bộ Flashcard
                     </button>
                 </div>
@@ -150,7 +172,7 @@
                 <h3 class="text-2xl font-semibold text-white mb-4 border-b border-gray-600 pb-3">2. Tạo Bản tin Từ vựng</h3>
                 <div class="flex flex-col sm:flex-row gap-4 mb-4">
                     <input type="text" id="newsletterTopicInput" placeholder="Nhập chủ đề (ví dụ: 'Công nghệ', 'Môi trường') hoặc để trống để ngẫu nhiên" class="flex-1 p-3 rounded-md bg-gray-900 text-white border border-gray-600 focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50 placeholder-gray-500">
-                    <button id="generateNewsletterBtn" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-lg shadow-md hover:from-blue-600 hover:to-cyan-600 transition duration-300 transform hover:scale-105">
+                    <button id="generateNewsletterBtn" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-lg shadow-md hover:from-blue-600 hover:to-cyan-600 transition duration-300 transform hover:scale-105 btn-gradient-hover">
                         Tạo Bản Tin
                     </button>
                 </div>
@@ -160,7 +182,7 @@
                     <p id="newsletterError" class="text-red-500 hidden"></p>
                     <div id="newsletterContent" class="text-gray-300 leading-relaxed text-base bg-gray-700 p-4 rounded-md shadow-sm"></div>
                     <p id="noNewsletterMessage" class="text-gray-400">Chưa có bản tin nào được tạo. Nhập chủ đề và nhấn "Tạo"!</p>
-                    <button id="saveNewsletterBtn" class="mt-6 w-full py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white font-bold rounded-lg shadow-lg hover:from-green-600 hover:to-teal-600 transition duration-300 transform hover:scale-105 hidden">
+                    <button id="saveNewsletterBtn" class="mt-6 w-full py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white font-bold rounded-lg shadow-lg hover:from-green-600 hover:to-teal-600 transition duration-300 transform hover:scale-105 btn-gradient-hover hidden">
                         Lưu Bản tin
                     </button>
                 </div>
@@ -174,41 +196,48 @@
             <!-- Learn via Flashcards Section -->
             <div class="mb-10 p-6 bg-gray-700 rounded-lg shadow-lg">
                 <h3 class="text-2xl font-semibold text-white mb-4 border-b border-gray-600 pb-3">1. Học qua Flashcard</h3>
-                <div id="savedFlashcardGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                    <!-- Flashcard sets will be rendered here -->
+                <div id="flashcardListContainer"> <!-- Container for flashcard grid -->
+                    <div id="savedFlashcardGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                        <!-- Flashcard sets will be rendered here -->
+                    </div>
+                    <p id="noSavedFlashcardsMessage" class="text-gray-400 text-center">Chưa có bộ flashcard nào được lưu. Hãy tạo một bộ ở tab "Tạo Tài Liệu Học"!</p>
                 </div>
-                <p id="noSavedFlashcardsMessage" class="text-gray-400 text-center">Chưa có bộ flashcard nào được lưu. Hãy tạo một bộ ở tab "Tạo Tài Liệu Học"!</p>
 
-                <div id="flashcardDisplay" class="flex flex-col items-center hidden">
-                    <!-- Flashcard -->
-                    <div id="flashcardContainer" class="flashcard-container w-full max-w-md h-64 perspective-1000 cursor-pointer mb-6">
-                        <div id="flashcardInner" class="flashcard-inner relative w-full h-full text-center rounded-xl shadow-xl transition-transform duration-700 ease-in-out">
-                            <!-- Front Face -->
-                            <div id="flashcardFront" class="flashcard-face flashcard-front absolute w-full h-full bg-gradient-to-br from-purple-700 to-indigo-700 rounded-xl flex items-center justify-center p-4 backface-hidden">
-                                <p id="flashcardWord" class="text-4xl font-bold text-white"></p>
-                                <button id="flashcardPronounceBtn" class="pronounce-btn absolute top-2 right-2" title="Nghe phát âm">
-                                    &#128266; <!-- Speaker emoji -->
-                                </button>
-                            </div>
-                            <!-- Back Face -->
-                            <div id="flashcardBack" class="flashcard-face flashcard-back absolute w-full h-full bg-gradient-to-br from-teal-600 to-green-600 rounded-xl flex flex-col items-center justify-center p-4 rotate-y-180 backface-hidden">
-                                <p id="flashcardMeaning" class="text-2xl font-bold text-white mb-2"></p>
-                                <p id="flashcardIPA" class="text-xl italic text-gray-100 mb-2"></p>
-                                <p id="flashcardExample" class="text-lg text-gray-200 text-center"></p>
+                <div id="flashcardLearningArea" class="hidden"> <!-- New: Area for active flashcard learning -->
+                    <div id="flashcardDisplay" class="flex flex-col items-center">
+                        <!-- Flashcard -->
+                        <div id="flashcardContainer" class="flashcard-container w-full max-w-md h-64 perspective-1000 cursor-pointer mb-6">
+                            <div id="flashcardInner" class="flashcard-inner relative w-full h-full text-center rounded-xl shadow-xl transition-transform duration-700 ease-in-out">
+                                <!-- Front Face -->
+                                <div id="flashcardFront" class="flashcard-face flashcard-front absolute w-full h-full bg-gradient-to-br from-purple-700 to-indigo-700 rounded-xl flex items-center justify-center p-4 backface-hidden">
+                                    <p id="flashcardWord" class="text-4xl font-bold text-white"></p>
+                                    <button id="flashcardPronounceBtn" class="pronounce-btn absolute top-2 right-2" title="Nghe phát âm">
+                                        &#128266; <!-- Speaker emoji -->
+                                    </button>
+                                </div>
+                                <!-- Back Face -->
+                                <div id="flashcardBack" class="flashcard-face flashcard-back absolute w-full h-full bg-gradient-to-br from-teal-600 to-green-600 rounded-xl flex flex-col items-center justify-center p-4 rotate-y-180 backface-hidden">
+                                    <p id="flashcardMeaning" class="text-2xl font-bold text-white mb-2"></p>
+                                    <p id="flashcardIPA" class="text-xl italic text-gray-100 mb-2"></p>
+                                    <p id="flashcardExample" class="text-lg text-gray-200 text-center"></p>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Flashcard Navigation Buttons -->
-                    <div class="flex space-x-4">
-                        <button id="prevFlashcardBtn" class="px-6 py-3 bg-gray-600 text-white font-bold rounded-full shadow-md hover:bg-gray-500 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
-                            Trước
-                        </button>
-                        <button id="nextFlashcardBtn" class="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-full shadow-md hover:from-purple-600 hover:to-pink-600 transition duration-300">
-                            Tiếp theo
-                        </button>
+                        <!-- Flashcard Navigation Buttons -->
+                        <div class="flex space-x-4">
+                            <button id="prevFlashcardBtn" class="px-6 py-3 bg-gray-600 text-white font-bold rounded-full shadow-md hover:bg-gray-500 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed btn-gradient-hover">
+                                Trước
+                            </button>
+                            <button id="nextFlashcardBtn" class="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-full shadow-md hover:from-purple-600 hover:to-pink-600 transition duration-300 btn-gradient-hover">
+                                Tiếp theo
+                            </button>
+                        </div>
+                        <p id="flashcardCounter" class="mt-4 text-gray-400"></p>
                     </div>
-                    <p id="flashcardCounter" class="mt-4 text-gray-400"></p>
+                    <button id="backToFlashcardListBtn" class="mt-6 w-full py-3 bg-gray-600 text-white font-bold rounded-lg shadow-lg hover:bg-gray-500 transition duration-300 transform hover:scale-105 btn-gradient-hover">
+                        Quay về danh sách Flashcard
+                    </button>
                 </div>
                 <p id="noFlashcardSetSelectedMessage" class="text-gray-400 text-center hidden">Vui lòng chọn một bộ flashcard để bắt đầu học.</p>
             </div>
@@ -216,13 +245,20 @@
             <!-- Learn via Newsletter Section -->
             <div class="p-6 bg-gray-700 rounded-lg shadow-lg">
                 <h3 class="text-2xl font-semibold text-white mb-4 border-b border-gray-600 pb-3">2. Học qua Bản tin</h3>
-                <div id="savedNewsletterGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                    <!-- Newsletters will be rendered here -->
+                <div id="newsletterListContainer"> <!-- Container for newsletter grid -->
+                    <div id="savedNewsletterGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                        <!-- Newsletters will be rendered here -->
+                    </div>
+                    <p id="noSavedNewslettersMessage" class="text-gray-400 text-center">Chưa có bản tin nào được lưu. Hãy tạo một bản tin ở tab "Tạo Tài Liệu Học"!</p>
                 </div>
-                <p id="noSavedNewslettersMessage" class="text-gray-400 text-center">Chưa có bản tin nào được lưu. Hãy tạo một bản tin ở tab "Tạo Tài Liệu Học"!</p>
 
-                <div id="selectedNewsletterContent" class="text-gray-300 leading-relaxed text-base bg-gray-800 p-4 rounded-md shadow-inner hidden"></div>
-                <p id="noSelectedNewsletterContentMessage" class="text-gray-400 text-center hidden">Vui lòng chọn một bản tin để đọc và học.</p>
+                <div id="newsletterReadingArea" class="hidden"> <!-- New: Area for active newsletter reading -->
+                    <div id="selectedNewsletterContent" class="text-gray-300 leading-relaxed text-base bg-gray-800 p-4 rounded-md shadow-inner"></div>
+                    <p id="noSelectedNewsletterContentMessage" class="text-gray-400 text-center hidden">Vui lòng chọn một bản tin để đọc và học.</p>
+                    <button id="backToNewsletterListBtn" class="mt-6 w-full py-3 bg-gray-600 text-white font-bold rounded-lg shadow-lg hover:bg-gray-500 transition duration-300 transform hover:scale-105 btn-gradient-hover">
+                        Quay về danh sách Bản tin
+                    </button>
+                </div>
                 <!-- Pop-up for word meaning -->
                 <div id="wordPopup" class="absolute z-10 p-3 bg-purple-700 text-white rounded-lg shadow-xl border border-purple-500 hidden">
                     <p id="popupMeaning" class="font-bold"></p>
@@ -273,8 +309,10 @@
         const noNewsletterMessage = document.getElementById('noNewsletterMessage');
         const saveNewsletterBtn = document.getElementById('saveNewsletterBtn');
 
+        const flashcardListContainer = document.getElementById('flashcardListContainer'); // New container for flashcard grid
         const savedFlashcardGrid = document.getElementById('savedFlashcardGrid'); // New DOM element
         const noSavedFlashcardsMessage = document.getElementById('noSavedFlashcardsMessage'); // New DOM element
+        const flashcardLearningArea = document.getElementById('flashcardLearningArea'); // New: Area for active flashcard learning
         const flashcardDisplay = document.getElementById('flashcardDisplay');
         const flashcardContainer = document.getElementById('flashcardContainer');
         const flashcardInner = document.getElementById('flashcardInner');
@@ -287,11 +325,15 @@
         const flashcardCounter = document.getElementById('flashcardCounter');
         const noFlashcardSetSelectedMessage = document.getElementById('noFlashcardSetSelectedMessage'); // Changed message ID
         const flashcardPronounceBtn = document.getElementById('flashcardPronounceBtn'); // New: Pronounce button for flashcard
+        const backToFlashcardListBtn = document.getElementById('backToFlashcardListBtn'); // New: Back button
 
+        const newsletterListContainer = document.getElementById('newsletterListContainer'); // New container for newsletter grid
         const savedNewsletterGrid = document.getElementById('savedNewsletterGrid'); // New DOM element
         const noSavedNewslettersMessage = document.getElementById('noSavedNewslettersMessage'); // New DOM element
+        const newsletterReadingArea = document.getElementById('newsletterReadingArea'); // New: Area for active newsletter reading
         const selectedNewsletterContent = document.getElementById('selectedNewsletterContent'); // For review tab
         const noSelectedNewsletterContentMessage = document.getElementById('noSelectedNewsletterContentMessage'); // Changed message ID
+        const backToNewsletterListBtn = document.getElementById('backToNewsletterListBtn'); // New: Back button
         const wordPopup = document.getElementById('wordPopup');
         const popupMeaning = document.getElementById('popupMeaning');
         const popupIPA = document.getElementById('popupIPA');
@@ -527,7 +569,7 @@
                             <p class="text-gray-300 text-sm italic">${item.meaning} - ${item.ipa}</p>
                             <p class="text-gray-400 text-sm">"${item.example}"</p>
                         </div>
-                        <button class="delete-vocab-btn ml-4 px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-200" data-index="${index}">Xóa</button>
+                        <button class="delete-vocab-btn ml-4 px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-200 btn-gradient-hover" data-index="${index}">Xóa</button>
                     `;
                     vocabList.appendChild(li);
                 });
@@ -687,10 +729,18 @@
                 isFlipped = false;
                 activeFlashcardSetId = setId; // Set the active set
                 updateFlashcardDisplay();
-                flashcardDisplay.classList.remove('hidden');
-                noFlashcardSetSelectedMessage.classList.add('hidden');
+                flashcardListContainer.classList.add('hidden'); // Hide the list of sets
+                flashcardLearningArea.classList.remove('hidden'); // Show the learning area
             }
         }
+
+        // Function to go back to the flashcard list
+        backToFlashcardListBtn.addEventListener('click', () => {
+            flashcardLearningArea.classList.add('hidden'); // Hide the learning area
+            flashcardListContainer.classList.remove('hidden'); // Show the list of sets
+            resetFlashcardDisplay(); // Reset display state
+        });
+
 
         function renderSavedFlashcards() {
             savedFlashcardGrid.innerHTML = ''; // Clear current grid
@@ -703,8 +753,8 @@
                         <h4 class="text-xl font-semibold text-purple-300 mb-2">${set.name}</h4>
                         <p class="text-gray-400 text-sm mb-4">${set.words.length} từ</p>
                         <div class="flex flex-col space-y-2">
-                            <button class="learn-flashcard-btn px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-md hover:from-blue-600 hover:to-cyan-600 transition duration-300" data-id="${set.id}">Học</button>
-                            <button class="delete-flashcard-set-btn px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-300" data-id="${set.id}">Xóa</button>
+                            <button class="learn-flashcard-btn px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-md hover:from-blue-600 hover:to-cyan-600 transition duration-300 btn-gradient-hover" data-id="${set.id}">Học</button>
+                            <button class="delete-flashcard-set-btn px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-300 btn-gradient-hover" data-id="${set.id}">Xóa</button>
                         </div>
                     `;
                     savedFlashcardGrid.appendChild(card);
@@ -725,7 +775,8 @@
                 });
             } else {
                 noSavedFlashcardsMessage.classList.remove('hidden');
-                resetFlashcardDisplay(); // Hide flashcard display if no sets
+                flashcardListContainer.classList.remove('hidden'); // Ensure list container is visible
+                flashcardLearningArea.classList.add('hidden'); // Ensure learning area is hidden
             }
         }
 
@@ -750,9 +801,9 @@
                 // Set data-word for pronunciation button
                 flashcardPronounceBtn.dataset.word = currentCard.word;
 
-                // Reset flip state
+                // Reset flip state, then apply if needed for next/prev
                 flashcardInner.classList.remove('rotate-y-180');
-                isFlipped = false;
+                isFlipped = false; // Always show front face on new card
 
                 prevFlashcardBtn.disabled = currentFlashcardIndex === 0;
                 nextFlashcardBtn.disabled = false; // Always allow next until the very last card
@@ -782,8 +833,14 @@
 
         nextFlashcardBtn.addEventListener('click', () => {
             if (currentFlashcardIndex < shuffledFlashcards.length - 1) {
-                currentFlashcardIndex++;
-                updateFlashcardDisplay();
+                // Always flip to front before moving to next card, then move
+                flashcardInner.classList.remove('rotate-y-180');
+                isFlipped = false;
+                // Use a slight delay to allow flip animation to start before content updates
+                setTimeout(() => {
+                    currentFlashcardIndex++;
+                    updateFlashcardDisplay();
+                }, 300); // Adjust delay to match CSS transition duration
             } else {
                 showCustomAlert('Bạn đã hoàn thành bộ flashcard này!');
                 nextFlashcardBtn.disabled = true; // Disable next button at the end
@@ -792,8 +849,14 @@
 
         prevFlashcardBtn.addEventListener('click', () => {
             if (currentFlashcardIndex > 0) {
-                currentFlashcardIndex--;
-                updateFlashcardDisplay();
+                // Always flip to front before moving to prev card, then move
+                flashcardInner.classList.remove('rotate-y-180');
+                isFlipped = false;
+                // Use a slight delay to allow flip animation to start before content updates
+                setTimeout(() => {
+                    currentFlashcardIndex--;
+                    updateFlashcardDisplay();
+                }, 300); // Adjust delay to match CSS transition duration
             } else {
                 showCustomAlert('Bạn đang ở thẻ đầu tiên.');
                 prevFlashcardBtn.disabled = true; // Disable prev button at the beginning
@@ -821,8 +884,17 @@
                 selectedNewsletterContent.innerHTML = selectedNewsletter.content;
                 selectedNewsletterContent.classList.remove('hidden');
                 noSelectedNewsletterContentMessage.classList.add('hidden');
+                newsletterListContainer.classList.add('hidden'); // Hide the list of newsletters
+                newsletterReadingArea.classList.remove('hidden'); // Show the reading area
             }
         }
+
+        // Function to go back to the newsletter list
+        backToNewsletterListBtn.addEventListener('click', () => {
+            newsletterReadingArea.classList.add('hidden'); // Hide the reading area
+            newsletterListContainer.classList.remove('hidden'); // Show the list of sets
+            resetNewsletterDisplay(); // Reset display state
+        });
 
         function renderSavedNewsletters() {
             savedNewsletterGrid.innerHTML = ''; // Clear current grid
@@ -834,8 +906,8 @@
                     card.innerHTML = `
                         <h4 class="text-xl font-semibold text-purple-300 mb-2">${nl.name}</h4>
                         <div class="flex flex-col space-y-2">
-                            <button class="read-newsletter-btn px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-md hover:from-blue-600 hover:to-cyan-600 transition duration-300" data-id="${nl.id}">Đọc</button>
-                            <button class="delete-newsletter-btn px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-300" data-id="${nl.id}">Xóa</button>
+                            <button class="read-newsletter-btn px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-md hover:from-blue-600 hover:to-cyan-600 transition duration-300 btn-gradient-hover" data-id="${nl.id}">Đọc</button>
+                            <button class="delete-newsletter-btn px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-300 btn-gradient-hover" data-id="${nl.id}">Xóa</button>
                         </div>
                     `;
                     savedNewsletterGrid.appendChild(card);
@@ -856,7 +928,8 @@
                 });
             } else {
                 noSavedNewslettersMessage.classList.remove('hidden');
-                resetNewsletterDisplay(); // Hide newsletter content if no sets
+                newsletterListContainer.classList.remove('hidden'); // Ensure list container is visible
+                newsletterReadingArea.classList.add('hidden'); // Ensure reading area is hidden
             }
         }
 
