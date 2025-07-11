@@ -180,6 +180,23 @@
             visibility: visible;
             transform: translateY(0);
         }
+
+        /* Loading Spinner Styles */
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #8B5CF6; /* purple-500 */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gray-900 text-white p-4 sm:p-6 lg:p-8">
@@ -230,7 +247,9 @@
                 </div>
                 <div id="generatedVocabOutput" class="mt-6 p-4 bg-gray-800 rounded-lg shadow-inner">
                     <h3 class="text-xl font-semibold text-white mb-4">Danh sách từ vựng đã tạo:</h3>
-                    <p id="vocabLoading" class="text-purple-400 hidden">Đang tạo từ vựng...</p>
+                    <p id="vocabLoading" class="text-purple-400 hidden flex items-center justify-center">
+                        <span class="loading-spinner"></span> Đang tạo từ vựng...
+                    </p>
                     <p id="vocabError" class="text-red-500 hidden"></p>
                     <ul id="vocabList" class="space-y-3"></ul>
                     <p id="noVocabMessage" class="text-gray-400">Chưa có từ vựng nào được tạo. Nhập chủ đề và nhấn "Tạo"!</p>
@@ -251,7 +270,9 @@
                 </div>
                 <div id="generatedNewsletterOutput" class="mt-6 p-4 bg-gray-800 rounded-lg shadow-inner">
                     <h3 class="text-xl font-semibold text-white mb-4">Bản tin đã tạo:</h3>
-                    <p id="newsletterLoading" class="text-purple-400 hidden">Đang tạo bản tin...</p>
+                    <p id="newsletterLoading" class="text-purple-400 hidden flex items-center justify-center">
+                        <span class="loading-spinner"></span> Đang tạo bản tin...
+                    </p>
                     <p id="newsletterError" class="text-red-500 hidden"></p>
                     <div id="newsletterContent" class="text-gray-300 leading-relaxed text-base bg-gray-700 p-4 rounded-md shadow-sm"></div>
                     <p id="noNewsletterMessage" class="text-gray-400">Chưa có bản tin nào được tạo. Nhập chủ đề và nhấn "Tạo"!</p>
@@ -476,7 +497,14 @@
             const newsletterWords = savedNewsletters.flatMap(nl => {
                 const doc = new DOMParser().parseFromString(nl.content, 'text/html');
                 const highlightedSpans = doc.querySelectorAll('.highlighted-word');
-                return Array.from(highlightedSpans).map(span => span.textContent.toLowerCase());
+                return Array.from(highlightedSpans).map(span => {
+                    // Extract only the text content, excluding the inline pronounce button
+                    const tempSpan = document.createElement('span');
+                    tempSpan.innerHTML = span.innerHTML;
+                    const btn = tempSpan.querySelector('.pronounce-btn-inline');
+                    if (btn) btn.remove();
+                    return tempSpan.textContent.toLowerCase();
+                });
             });
             if (newsletterWords.includes(lowerCaseWord)) {
                 return true;
@@ -687,7 +715,7 @@
 
             const newsletterTopic = newsletterTopicInput.value.trim();
             // Explicitly tell AI not to use markdown and no introductory/concluding phrases
-            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `về chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. KHÔNG sử dụng bất kỳ định dạng Markdown nào như **bold** hay __underline__. KHÔNG bao gồm bất kỳ lời giới thiệu hay kết luận nào như "Here's a news bulletin", "In conclusion", "Okay, here's a news bulletin on...", "This report details...", "The following news report...", "Here is a brief news update...", "This newsletter focuses on...", "We're bringing you a report on...", "Here's an overview of...", "This article discusses...", "Below is a news piece on...", "This bulletin provides information on...", "Here's a summary of...", "In this report, we cover...". Chỉ cung cấp nội dung bản tin. Trong bản tin này, hãy sử dụng ít nhất 5-7 từ vựng trình độ C1/C2. Ngay sau mỗi từ vựng C1/C2, trong dấu ngoặc đơn, cung cấp nghĩa tiếng Việt và phiên âm IPA của từ đó. Ví dụ: "The ubiquitous (phổ biến - /juːˈbɪkwitəs/) nature of technology..." Đảm bảo các từ vựng được highlight không trùng lặp với các từ đã có trong các bộ flashcard đã lưu.`;
+            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `liên quan đến chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. KHÔNG sử dụng bất kỳ định dạng Markdown nào như **bold** hay __underline__. KHÔNG bao gồm bất kỳ lời giới thiệu hay kết luận nào như "Here's a news bulletin", "In conclusion", "Okay, here's a news bulletin on...", "This report details...", "The following news report...", "Here is a brief news update...", "This newsletter focuses on...", "We're bringing you a report on...", "Here's an overview of...", "This article discusses...", "Below is a news piece on...", "This bulletin provides information on...", "Here's a summary of...", "In this report, we cover...". Chỉ cung cấp nội dung bản tin. Trong bản tin này, hãy sử dụng ít nhất 5-7 từ vựng trình độ C1/C2. Ngay sau mỗi từ vựng C1/C2, trong dấu ngoặc đơn, cung cấp nghĩa tiếng Việt và phiên âm IPA của từ đó. Ví dụ: "The ubiquitous (phổ biến - /juːˈbɪkwitəs/) nature of technology..." Đảm bảo các từ vựng được highlight không trùng lặp với các từ đã có trong các bộ flashcard đã lưu.`;
 
             try {
                 let text = await callGeminiAPI(prompt);
@@ -820,6 +848,12 @@
                 activeFlashcardSetId = setId; // Set the active set
                 updateFlashcardDisplay();
                 
+                // Hide newsletter sections if they are visible
+                newsletterListContainer.classList.remove('is-visible');
+                newsletterListContainer.classList.add('hidden');
+                newsletterReadingArea.classList.remove('is-visible');
+                newsletterReadingArea.classList.add('hidden');
+
                 flashcardListContainer.classList.remove('is-visible');
                 flashcardListContainer.classList.add('hidden'); // Hide the list of sets immediately after transition starts
                 
@@ -876,8 +910,11 @@
                 });
             } else {
                 noSavedFlashcardsMessage.classList.remove('hidden');
-                flashcardListContainer.classList.remove('hidden'); // Ensure list container is visible
-                flashcardLearningArea.classList.add('hidden'); // Ensure learning area is hidden
+                // Ensure list container is visible if no cards, but learning area is hidden
+                flashcardListContainer.classList.remove('hidden');
+                flashcardListContainer.classList.add('is-visible');
+                flashcardLearningArea.classList.add('hidden');
+                flashcardLearningArea.classList.remove('is-visible');
             }
         }
 
@@ -986,6 +1023,12 @@
                 selectedNewsletterContent.classList.remove('hidden');
                 noSelectedNewsletterContentMessage.classList.add('hidden');
                 
+                // Hide flashcard sections if they are visible
+                flashcardListContainer.classList.remove('is-visible');
+                flashcardListContainer.classList.add('hidden');
+                flashcardLearningArea.classList.remove('is-visible');
+                flashcardLearningArea.classList.add('hidden');
+
                 newsletterListContainer.classList.remove('is-visible');
                 newsletterListContainer.classList.add('hidden'); // Hide the list of newsletters immediately after transition starts
                 
@@ -1015,13 +1058,6 @@
                 resetNewsletterDisplay(); // Reset display state
             }, 500); // Delay matches transition duration
         });
-
-        // Removed: Event listener for the "Đọc Bản Tin" button
-        // readNewsletterContentBtn.addEventListener('click', () => {
-        //     const contentToSpeak = selectedNewsletterContent.textContent;
-        //     speakWord(contentToSpeak, 'en-US'); // Assuming newsletter is in English
-        // });
-
 
         function renderSavedNewsletters() {
             savedNewsletterGrid.innerHTML = ''; // Clear current grid
@@ -1055,8 +1091,11 @@
                 });
             } else {
                 noSavedNewslettersMessage.classList.remove('hidden');
-                newsletterListContainer.classList.remove('hidden'); // Ensure list container is visible
-                newsletterReadingArea.classList.add('hidden'); // Ensure reading area is hidden
+                // Ensure list container is visible if no newsletters, but reading area is hidden
+                newsletterListContainer.classList.remove('hidden');
+                newsletterListContainer.classList.add('is-visible');
+                newsletterReadingArea.classList.add('hidden');
+                newsletterReadingArea.classList.remove('is-visible');
             }
         }
 
@@ -1080,7 +1119,21 @@
 
                 // Position the popup using fixed positioning relative to the viewport
                 const rect = target.getBoundingClientRect();
-                wordPopup.style.left = `${rect.left}px`;
+                // Calculate horizontal center of the target word for better alignment
+                const targetCenterX = rect.left + (rect.width / 2);
+                const popupWidth = wordPopup.offsetWidth; // Get current width of popup
+                let popupLeft = targetCenterX - (popupWidth / 2);
+
+                // Prevent popup from going off-screen to the left
+                if (popupLeft < 10) { // 10px padding from left edge
+                    popupLeft = 10;
+                }
+                // Prevent popup from going off-screen to the right
+                if (popupLeft + popupWidth > window.innerWidth - 10) { // 10px padding from right edge
+                    popupLeft = window.innerWidth - popupWidth - 10;
+                }
+
+                wordPopup.style.left = `${popupLeft}px`;
                 wordPopup.style.top = `${rect.bottom + 5}px`; // 5px below the word
                 
                 wordPopup.classList.remove('hidden');
