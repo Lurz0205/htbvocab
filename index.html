@@ -174,7 +174,7 @@
 
     <!-- Footer -->
     <footer class="text-center text-gray-500 mt-10 text-sm">
-        <p>&copy; 2025 VocabBoost. Bảo lưu mọi quyền.</p>
+        <p>&copy; 2024 VocabBoost. Bảo lưu mọi quyền.</p>
     </footer>
 
     <script>
@@ -208,7 +208,7 @@
         const generateNewsletterBtn = document.getElementById('generateNewsletterBtn');
         const newsletterLoading = document.getElementById('newsletterLoading');
         const newsletterError = document.getElementById('newsletterError');
-        const newsletterContentDiv = document.getElementById('newsletterContent');
+        const newsletterContentDiv = document.getElementById('newsletterContent'); // For create tab
         const noNewsletterMessage = document.getElementById('noNewsletterMessage');
         const saveNewsletterBtn = document.getElementById('saveNewsletterBtn');
 
@@ -226,7 +226,7 @@
         const noFlashcardSetMessage = document.getElementById('noFlashcardSetMessage');
 
         const newsletterSelect = document.getElementById('newsletterSelect');
-        const selectedNewsletterContent = document.getElementById('selectedNewsletterContent');
+        const selectedNewsletterContent = document.getElementById('selectedNewsletterContent'); // For review tab
         const noSelectedNewsletterMessage = document.getElementById('noSelectedNewsletterMessage');
         const wordPopup = document.getElementById('wordPopup');
         const popupMeaning = document.getElementById('popupMeaning');
@@ -287,7 +287,9 @@
                 };
             }
 
-            const apiKey = "AIzaSyDe33qK44IF_aCXQEOwGqDCZ5iQCN9I5Qg"; // API key will be provided by Canvas runtime
+            // IMPORTANT: Replace "YOUR_GEMINI_API_KEY_HERE" with your actual Gemini API Key.
+            // You can get one from Google AI Studio: https://aistudio.google.com/app/apikey
+            const apiKey = "AIzaSyDe33qK44IF_aCXQEOwGqDCZ5iQCN9I5Qg"; 
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
             try {
@@ -400,17 +402,22 @@
             generateNewsletterBtn.disabled = true;
 
             const newsletterTopic = newsletterTopicInput.value.trim();
-            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `về chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. Trong bản tin này, hãy sử dụng ít nhất 5-7 từ vựng trình độ C1/C2. Ngay sau mỗi từ vựng C1/C2, trong dấu ngoặc đơn, cung cấp nghĩa tiếng Việt và phiên âm IPA của từ đó. Ví dụ: "The ubiquitous (phổ biến - /juːˈbɪkwɪtəs/) nature of technology..." Đảm bảo các từ vựng được highlight không trùng lặp với các từ đã có trong các bộ flashcard đã lưu.`;
+            // Explicitly tell AI not to use markdown
+            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `về chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. KHÔNG sử dụng bất kỳ định dạng Markdown nào như **bold** hay __underline__. Trong bản tin này, hãy sử dụng ít nhất 5-7 từ vựng trình độ C1/C2. Ngay sau mỗi từ vựng C1/C2, trong dấu ngoặc đơn, cung cấp nghĩa tiếng Việt và phiên âm IPA của từ đó. Ví dụ: "The ubiquitous (phổ biến - /juːˈbɪkwitəs/) nature of technology..." Đảm bảo các từ vựng được highlight không trùng lặp với các từ đã có trong các bộ flashcard đã lưu.`;
 
             try {
                 const text = await callGeminiAPI(prompt);
-                // Regex to find words in "WORD (meaning - ipa)" format
-                const processedText = text.replace(/([A-Za-z'-]+)\s*\(([^)]*?)\s*-\s*([^)]*?)\)/g, (match, word, meaning, ipa) => {
-                    if (isDuplicateWord(word)) {
-                        return word; // If duplicate, return plain word
+                // Regex to find words in "WORD (meaning - ipa)" format, and also handle potential markdown remnants
+                // This regex is more robust to capture words that might still have ** or __ around them,
+                // and then strip them before creating the span.
+                const processedText = text.replace(/(\*\*|__)?([A-Za-z'-]+)(\*\*|__)?\s*\(([^)]*?)\s*-\s*([^)]*?)\)/g, (match, preBold, word, postBold, meaning, ipa) => {
+                    // Clean the word from any markdown bold/underline remnants
+                    const cleanWord = word.replace(/\*\*|__/g, '');
+                    if (isDuplicateWord(cleanWord)) {
+                        return cleanWord; // If duplicate, return plain word
                     } else {
-                        // Wrap word in a span with data attributes for meaning and IPA
-                        return `<span class="highlighted-word" data-meaning="${meaning.trim()}" data-ipa="${ipa.trim()}">${word}</span>`;
+                        // Wrap word in a span with data attributes for meaning and IPA, and apply inline styles
+                        return `<span class="highlighted-word" data-meaning="${meaning.trim()}" data-ipa="${ipa.trim()}" style="font-weight: bold; text-decoration: underline; cursor: pointer;">${cleanWord}</span>`;
                     }
                 });
                 generatedNewsletterHtml = processedText;
@@ -598,12 +605,12 @@
             } else {
                 selectedNewsletterContent.innerHTML = '';
                 selectedNewsletterContent.classList.add('hidden');
-                noSelectedNewsletterMessage.classList.remove('hidden');
+                noSelectedNewsletterContent.classList.remove('hidden');
             }
         });
 
-        // Event listener for clicking on highlighted words in newsletter
-        selectedNewsletterContent.addEventListener('click', (event) => {
+        // Function to handle word clicks (used by both newsletterContentDiv and selectedNewsletterContent)
+        function handleWordClick(event) {
             const target = event.target;
             if (target.classList.contains('highlighted-word')) {
                 const meaning = target.dataset.meaning;
@@ -620,7 +627,12 @@
             } else {
                 wordPopup.classList.add('hidden'); // Hide popup if click outside highlighted word
             }
-        });
+        }
+
+        // Event listeners for clicking on highlighted words in newsletter
+        // Apply to both the content div in "create" tab and "review" tab
+        newsletterContentDiv.addEventListener('click', handleWordClick); // New: for create tab
+        selectedNewsletterContent.addEventListener('click', handleWordClick); // Existing: for review tab
 
         // Hide popup when clicking anywhere else on the document
         document.addEventListener('click', (event) => {
