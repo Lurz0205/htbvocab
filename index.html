@@ -35,6 +35,7 @@
             padding-right: 20px; /* Space for the speaker icon */
             display: inline-flex; /* To align icon with text baseline */
             align-items: baseline;
+            transition: transform 0.1s ease-out, background-color 0.1s ease-out; /* For click effect */
         }
         /* Specific colors for word levels */
         .highlighted-word.b2-level {
@@ -42,6 +43,17 @@
         }
         .highlighted-word.c1-c2-level {
             color: #F87171; /* red-400 */
+        }
+
+        /* Click effect for highlighted words */
+        .highlighted-word.clicked-effect {
+            animation: wordPulse 0.3s ease-out;
+        }
+
+        @keyframes wordPulse {
+            0% { transform: scale(1); background-color: transparent; }
+            50% { transform: scale(1.05); background-color: rgba(255, 255, 255, 0.1); } /* Subtle background flash */
+            100% { transform: scale(1); background-color: transparent; }
         }
 
         .highlighted-word .pronounce-btn-inline {
@@ -489,6 +501,8 @@
         }
 
         // --- Check for duplicate words in saved data (flashcards and newsletters) ---
+        // This function is only used for generating NEW flashcards to avoid adding duplicates to saved sets.
+        // It is NOT used for highlighting words within newsletters.
         function isDuplicateWordInSavedData(wordToCheck) {
             const lowerCaseWord = wordToCheck.toLowerCase();
 
@@ -757,23 +771,23 @@
                 }
             };
 
-            // Construct the negative constraint for the prompt based on words already saved
-            const savedWordsForExclusion = savedFlashcards.flatMap(set => set.words.map(w => `"${w.word}"`))
-                                            .concat(savedNewsletters.flatMap(nl => {
-                                                const doc = new DOMParser().parseFromString(nl.content, 'text/html');
-                                                const highlightedSpans = doc.querySelectorAll('.highlighted-word');
-                                                return Array.from(highlightedSpans).map(span => {
-                                                    const tempSpan = document.createElement('span');
-                                                    tempSpan.innerHTML = span.innerHTML;
-                                                    const btn = tempSpan.querySelector('.pronounce-btn-inline');
-                                                    if (btn) btn.remove();
-                                                    return `"${tempSpan.textContent}"`;
-                                                });
-                                            })).join(', ');
-            const exclusionPrompt = savedWordsForExclusion ? `Không được trùng lặp với các từ sau: ${savedWordsForExclusion}. ` : '';
+            // Collect all highlighted words from saved newsletters to use as a soft exclusion list for AI
+            const wordsToExcludeFromNewsletterLLM = savedNewsletters.flatMap(nl => {
+                const doc = new DOMParser().parseFromString(nl.content, 'text/html');
+                const highlightedSpans = doc.querySelectorAll('.highlighted-word');
+                return Array.from(highlightedSpans).map(span => {
+                    const tempSpan = document.createElement('span');
+                    tempSpan.innerHTML = span.innerHTML;
+                    const btn = tempSpan.querySelector('.pronounce-btn-inline');
+                    if (btn) btn.remove();
+                    return `"${tempSpan.textContent}"`; // Get the actual word text
+                });
+            }).join(', ');
+
+            const exclusionPromptForNewsletter = wordsToExcludeFromNewsletterLLM ? `Hạn chế sử dụng các từ sau: ${wordsToExcludeFromNewsletterLLM}. ` : '';
 
 
-            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `về chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. ${exclusionPrompt}Sau đó, liệt kê tất cả các từ vựng trình độ B2, C1, C2 trong bản tin đó, kèm theo nghĩa tiếng Việt, phiên âm IPA và cấp độ (B2 hoặc C1/C2). Trả về dưới dạng JSON với hai trường: 'newsletter_content' (nội dung bản tin thô) và 'vocabulary' (một mảng các đối tượng từ vựng).
+            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `về chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. ${exclusionPromptForNewsletter}Sau đó, liệt kê tất cả các từ vựng trình độ B2, C1, C2 trong bản tin đó, kèm theo nghĩa tiếng Việt, phiên âm IPA và cấp độ (B2 hoặc C1/C2). Trả về dưới dạng JSON với hai trường: 'newsletter_content' (nội dung bản tin thô) và 'vocabulary' (một mảng các đối tượng từ vựng).
             Ví dụ JSON:
             {
               "newsletter_content": "The ubiquitous nature of technology has transformed our daily lives...",
@@ -781,7 +795,7 @@
                 {
                   "word": "ubiquitous",
                   "meaning": "phổ biến",
-                  "ipa": "/juːˈbɪkwɪtəs/",
+                  "ipa": "/juːˈbɪkwitəs/",
                   "level": "C1/C2"
                 },
                 {
@@ -799,17 +813,34 @@
                 let newsletterText = data.newsletter_content;
                 const vocabularyWords = data.vocabulary;
 
-                // Sort words by length in descending order to avoid replacing substrings incorrectly
+                // Set to track words that have already been highlighted in this specific newsletter generation
+                const wordsHighlightedInCurrentNewsletter = new Set();
+
+                // Sort words by length in descending order to avoid issues with substrings (e.g., "carbon" before "decarbonization")
                 vocabularyWords.sort((a, b) => b.word.length - a.word.length);
 
                 for (const item of vocabularyWords) {
                     const cleanWord = item.word;
-                    // Only highlight if the word is not already saved in another context
-                    if (!isDuplicateWordInSavedData(cleanWord)) {
-                        const levelClass = item.level === 'B2' ? 'b2-level' : 'c1-c2-level';
-                        // Use regex with word boundaries to replace only whole words
-                        const regex = new RegExp(`\\b${cleanWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi'); // Escape special characters
-                        newsletterText = newsletterText.replace(regex, `<span class="highlighted-word ${levelClass}" data-meaning="${item.meaning}" data-ipa="${item.ipa}">${cleanWord}<button class="pronounce-btn pronounce-btn-inline" data-word="${cleanWord}" title="Nghe phát âm">&#128266;</button></span>`);
+                    const lowerCaseCleanWord = cleanWord.toLowerCase();
+
+                    // Only highlight if this word has NOT already been highlighted in *this specific newsletter generation*.
+                    // No check against isDuplicateWordInSavedData(cleanWord) as per user's request for newsletter.
+                    if (wordsHighlightedInCurrentNewsletter.has(lowerCaseCleanWord)) {
+                        continue; // Skip if already highlighted in this newsletter
+                    }
+
+                    const levelClass = item.level === 'B2' ? 'b2-level' : 'c1-c2-level';
+                    const replacementHtml = `<span class="highlighted-word ${levelClass}" data-meaning="${item.meaning}" data-ipa="${item.ipa}">${cleanWord}<button class="pronounce-btn pronounce-btn-inline" data-word="${cleanWord}" title="Nghe phát âm">&#128266;</button></span>`;
+
+                    // Find the first occurrence of the word in the current newsletterText
+                    // Use a regex with word boundaries to ensure whole word matching
+                    // No 'g' flag to ensure only the first match is replaced
+                    const regex = new RegExp(`\\b${cleanWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i'); 
+
+                    // Replace only the first occurrence
+                    if (newsletterText.match(regex)) { // Check if word exists before attempting to replace
+                        newsletterText = newsletterText.replace(regex, replacementHtml);
+                        wordsHighlightedInCurrentNewsletter.add(lowerCaseCleanWord); // Mark as highlighted for this newsletter
                     }
                 }
                 generatedNewsletterHtml = newsletterText;
@@ -1205,6 +1236,12 @@
                 
                 wordPopup.classList.remove('hidden');
                 wordPopup.classList.add('is-visible'); // Trigger transition
+
+                // Add click effect to the word itself
+                target.classList.add('clicked-effect');
+                setTimeout(() => {
+                    target.classList.remove('clicked-effect');
+                }, 300); // Match animation duration
             } else if (!target.classList.contains('pronounce-btn-inline')) { // Hide if click outside highlighted word or its pronounce button
                 wordPopup.classList.remove('is-visible'); // Trigger transition
                 setTimeout(() => {
