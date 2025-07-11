@@ -33,9 +33,56 @@
             cursor: pointer;
             color: #8B5CF6; /* A purple shade for better visibility */
         }
+        /* Custom Alert Modal Styles */
+        .custom-alert-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .custom-alert-box {
+            background-color: #1f2937; /* gray-800 */
+            padding: 2rem;
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            border: 1px solid #4b5563; /* gray-600 */
+        }
+        .custom-alert-box p {
+            color: #d1d5db; /* gray-300 */
+            font-size: 1.125rem; /* text-lg */
+            margin-bottom: 1.5rem;
+        }
+        .custom-alert-box button {
+            background-color: #8B5CF6; /* purple-500 */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        .custom-alert-box button:hover {
+            background-color: #7c3aed; /* purple-600 */
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gray-900 text-white p-4 sm:p-6 lg:p-8">
+
+    <!-- Custom Alert Modal -->
+    <div id="customAlertOverlay" class="custom-alert-overlay hidden">
+        <div class="custom-alert-box">
+            <p id="customAlertMessage"></p>
+            <button id="customAlertCloseBtn">Đóng</button>
+        </div>
+    </div>
 
     <!-- Header -->
     <header class="text-center mb-10">
@@ -174,7 +221,7 @@
 
     <!-- Footer -->
     <footer class="text-center text-gray-500 mt-10 text-sm">
-        <p>&copy; 2024 VocabBoost. Bảo lưu mọi quyền.</p>
+        <p>&copy; 2025 VocabBoost. Bảo lưu mọi quyền.</p>
     </footer>
 
     <script>
@@ -232,7 +279,27 @@
         const popupMeaning = document.getElementById('popupMeaning');
         const popupIPA = document.getElementById('popupIPA');
 
+        // Custom Alert DOM elements
+        const customAlertOverlay = document.getElementById('customAlertOverlay');
+        const customAlertMessage = document.getElementById('customAlertMessage');
+        const customAlertCloseBtn = document.getElementById('customAlertCloseBtn');
+
         // --- Utility Functions ---
+
+        // Show custom alert
+        function showCustomAlert(message) {
+            customAlertMessage.textContent = message;
+            customAlertOverlay.classList.remove('hidden');
+            // Optionally hide after a few seconds
+            // setTimeout(() => {
+            //     customAlertOverlay.classList.add('hidden');
+            // }, 3000);
+        }
+
+        // Hide custom alert
+        customAlertCloseBtn.addEventListener('click', () => {
+            customAlertOverlay.classList.add('hidden');
+        });
 
         // Load data from localStorage on page load
         document.addEventListener('DOMContentLoaded', () => {
@@ -325,16 +392,10 @@
             generateVocabBtn.disabled = true;
 
             const vocabTopic = vocabTopicInput.value.trim();
-            const prompt = `Tạo một danh sách 10 từ vựng tiếng Anh trình độ C1/C2 ${vocabTopic ? `liên quan đến chủ đề "${vocabTopic}"` : 'ngẫu nhiên'}. Với mỗi từ, cung cấp nghĩa tiếng Việt, phiên âm IPA và một câu ví dụ. Định dạng JSON như sau:
-            [
-              {
-                "word": "Từ vựng",
-                "meaning": "Nghĩa tiếng Việt",
-                "ipa": "Phiên âm IPA",
-                "example": "Câu ví dụ"
-              }
-            ]
-            `;
+            const targetWordCount = 10;
+            const maxAttempts = 3; // Max attempts to get unique words
+            let currentGeneratedWords = [];
+            let wordsAddedThisRound = 0;
 
             const schema = {
                 type: "ARRAY",
@@ -351,16 +412,54 @@
             };
 
             try {
-                const data = await callGeminiAPI(prompt, schema);
-                const filteredData = data.filter(item => !isDuplicateWord(item.word));
+                for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                    const wordsNeeded = targetWordCount - currentGeneratedWords.length;
+                    if (wordsNeeded <= 0) {
+                        break; // We have enough words
+                    }
 
-                if (filteredData.length < data.length) {
-                    vocabError.textContent = 'Một số từ đã bị loại bỏ do trùng lặp với các bộ flashcard đã lưu.';
-                    vocabError.classList.remove('hidden');
+                    // Request slightly more words than needed to account for potential duplicates
+                    const requestCount = wordsNeeded + 2; // Request 2 extra words per attempt
+                    const prompt = `Tạo một danh sách ${requestCount} từ vựng tiếng Anh trình độ C1/C2 ${vocabTopic ? `liên quan đến chủ đề "${vocabTopic}"` : 'ngẫu nhiên'}. Với mỗi từ, cung cấp nghĩa tiếng Việt, phiên âm IPA và một câu ví dụ. Định dạng JSON như sau:
+                    [
+                      {
+                        "word": "Từ vựng",
+                        "meaning": "Nghĩa tiếng Việt",
+                        "ipa": "Phiên âm IPA",
+                        "example": "Câu ví dụ"
+                      }
+                    ]
+                    `;
+
+                    const data = await callGeminiAPI(prompt, schema);
+                    wordsAddedThisRound = 0; // Reset counter for this round
+
+                    for (const item of data) {
+                        if (currentGeneratedWords.length >= targetWordCount) {
+                            break; // Stop adding if we reached target
+                        }
+                        // Check against already generated words and saved flashcards
+                        if (!currentGeneratedWords.some(w => w.word.toLowerCase() === item.word.toLowerCase()) && !isDuplicateWord(item.word)) {
+                            currentGeneratedWords.push(item);
+                            wordsAddedThisRound++;
+                        }
+                    }
+
+                    if (currentGeneratedWords.length === targetWordCount) {
+                        break; // Successfully got target number of words
+                    }
                 }
 
-                generatedVocab = filteredData;
+                generatedVocab = currentGeneratedWords;
                 renderGeneratedVocab();
+
+                if (generatedVocab.length < targetWordCount) {
+                    vocabError.textContent = `Chỉ tạo được ${generatedVocab.length} từ. Một số từ bị trùng lặp hoặc không thể tạo thêm.`;
+                    vocabError.classList.remove('hidden');
+                } else {
+                    vocabError.classList.add('hidden');
+                }
+
             } catch (error) {
                 vocabError.textContent = error.message;
                 vocabError.classList.remove('hidden');
@@ -403,7 +502,7 @@
 
             const newsletterTopic = newsletterTopicInput.value.trim();
             // Explicitly tell AI not to use markdown
-            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `về chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. KHÔNG sử dụng bất kỳ định dạng Markdown nào như **bold** hay __underline__. Trong bản tin này, hãy sử dụng ít nhất 5-7 từ vựng trình độ C1/C2. Ngay sau mỗi từ vựng C1/C2, trong dấu ngoặc đơn, cung cấp nghĩa tiếng Việt và phiên âm IPA của từ đó. Ví dụ: "The ubiquitous (phổ biến - /juːˈbɪkwitəs/) nature of technology..." Đảm bảo các từ vựng được highlight không trùng lặp với các từ đã có trong các bộ flashcard đã lưu.`;
+            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `về chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. KHÔNG sử dụng bất kỳ định dạng Markdown nào như **bold** hay __underline__. Trong bản tin này, hãy sử dụng ít nhất 5-7 từ vựng trình độ C1/C2. Ngay sau mỗi từ vựng C1/C2, trong dấu ngoặc đơn, cung cấp nghĩa tiếng Việt và phiên âm IPA của từ đó. Ví dụ: "The ubiquitous (phổ biến - /juːˈbɪkwɪtəs/) nature of technology..." Đảm bảo các từ vựng được highlight không trùng lặp với các từ đã có trong các bộ flashcard đã lưu.`;
 
             try {
                 const text = await callGeminiAPI(prompt);
@@ -417,7 +516,7 @@
                         return cleanWord; // If duplicate, return plain word
                     } else {
                         // Wrap word in a span with data attributes for meaning and IPA, and apply inline styles
-                        return `<span class="highlighted-word" data-meaning="${meaning.trim()}" data-ipa="${ipa.trim()}" style="font-weight: bold; text-decoration: underline; cursor: pointer;">${cleanWord}</span>`;
+                        return `<span class="highlighted-word" data-meaning="${meaning.trim()}" data-ipa="${ipa.trim()}">${cleanWord}</span>`;
                     }
                 });
                 generatedNewsletterHtml = processedText;
@@ -448,7 +547,7 @@
         // --- Save Data Functions ---
         saveFlashcardsBtn.addEventListener('click', () => {
             if (generatedVocab.length === 0) {
-                alert('Không có từ vựng nào để lưu.');
+                showCustomAlert('Không có từ vựng nào để lưu.');
                 return;
             }
             const newSet = {
@@ -462,12 +561,12 @@
             vocabTopicInput.value = '';
             renderGeneratedVocab(); // Re-render to clear display
             updateFlashcardSetSelect(); // Update select dropdown
-            alert('Bộ flashcard đã được lưu thành công!');
+            showCustomAlert('Bộ flashcard đã được lưu thành công!');
         });
 
         saveNewsletterBtn.addEventListener('click', () => {
             if (!generatedNewsletterHtml) {
-                alert('Không có bản tin nào để lưu.');
+                showCustomAlert('Không có bản tin nào để lưu.');
                 return;
             }
             const newNewsletter = {
@@ -481,7 +580,7 @@
             newsletterTopicInput.value = '';
             renderGeneratedNewsletter(); // Re-render to clear display
             updateNewsletterSelect(); // Update select dropdown
-            alert('Bản tin đã được lưu thành công!');
+            showCustomAlert('Bản tin đã được lưu thành công!');
         });
 
         // --- Flashcard Learning Functions ---
@@ -561,7 +660,7 @@
                 currentFlashcardIndex++;
                 updateFlashcardDisplay();
             } else {
-                alert('Bạn đã hoàn thành bộ flashcard này!');
+                showCustomAlert('Bạn đã hoàn thành bộ flashcard này!');
                 nextFlashcardBtn.disabled = true; // Disable next button at the end
             }
         });
@@ -571,7 +670,7 @@
                 currentFlashcardIndex--;
                 updateFlashcardDisplay();
             } else {
-                alert('Bạn đang ở thẻ đầu tiên.');
+                showCustomAlert('Bạn đang ở thẻ đầu tiên.');
                 prevFlashcardBtn.disabled = true; // Disable prev button at the beginning
             }
         });
@@ -605,7 +704,7 @@
             } else {
                 selectedNewsletterContent.innerHTML = '';
                 selectedNewsletterContent.classList.add('hidden');
-                noSelectedNewsletterContent.classList.remove('hidden');
+                noSelectedNewsletterMessage.classList.remove('hidden');
             }
         });
 
@@ -636,7 +735,7 @@
 
         // Hide popup when clicking anywhere else on the document
         document.addEventListener('click', (event) => {
-            if (!wordPopup.contains(event.target) && !event.target.classList.contains('highlighted-word')) {
+            if (!wordPopup.contains(event.target) && !event.target.classList.contains('highlighted-word') && !wordPopup.classList.contains('hidden')) {
                 wordPopup.classList.add('hidden');
             }
         });
@@ -645,6 +744,21 @@
         // --- Tab Switching Event Listeners ---
         createTabBtn.addEventListener('click', () => showTab('create'));
         reviewTabBtn.addEventListener('click', () => showTab('review'));
+
+        // --- Enter Key Press Listeners ---
+        vocabTopicInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // Prevent default form submission
+                generateVocabBtn.click();
+            }
+        });
+
+        newsletterTopicInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // Prevent default form submission
+                generateNewsletterBtn.click();
+            }
+        });
 
     </script>
 </body>
