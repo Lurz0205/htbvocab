@@ -32,7 +32,7 @@
             text-decoration: underline;
             cursor: pointer;
             position: relative; /* Needed for positioning the pronounce button inside */
-            padding-right: 20px; /* Space for the speaker icon */
+            /* Removed padding-right for speaker icon as it's removed */
             display: inline-flex; /* To align icon with text baseline */
             align-items: baseline;
             transition: transform 0.1s ease-out, background-color 0.1s ease-out; /* For click effect */
@@ -56,15 +56,7 @@
             100% { transform: scale(1); background-color: transparent; }
         }
 
-        .highlighted-word .pronounce-btn-inline {
-            position: absolute;
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 0.9em; /* Smaller icon for inline */
-            margin-left: 0; /* Remove default margin */
-            line-height: 1; /* Align with text */
-        }
+        /* Removed .pronounce-btn-inline as the button is removed */
 
         /* Custom Alert Modal Styles */
         .custom-alert-overlay {
@@ -179,9 +171,9 @@
             min-height: 500px; /* Ensure main has enough height for content */
         }
 
-        /* Popup for word meaning - Fixed position for better alignment */
+        /* Popup for word meaning - Changed to absolute position */
         #wordPopup {
-            position: fixed; /* Changed to fixed */
+            position: absolute; /* Changed from fixed to absolute */
             z-index: 1001; /* Higher than overlay */
             padding: 0.75rem 1rem; /* Adjusted padding */
             background-color: #6d28d9; /* purple-700 */
@@ -365,7 +357,7 @@
                 </div>
 
                 <div id="newsletterReadingArea" class="hidden"> <!-- New: Area for active newsletter reading -->
-                    <!-- Removed "Đọc Bản Tin" button -->
+                    <h4 id="newsletterTitleDisplay" class="text-2xl font-bold text-purple-300 mb-4 flex items-center"></h4>
                     <div id="selectedNewsletterContent" class="text-gray-300 leading-relaxed text-base bg-gray-800 p-4 rounded-md shadow-inner"></div>
                     <p id="noSelectedNewsletterContentMessage" class="text-gray-400 text-center hidden">Vui lòng chọn một bản tin để đọc và học.</p>
                     <button id="backToNewsletterListBtn" class="mt-6 w-full py-3 bg-gray-600 text-white font-bold rounded-lg shadow-lg hover:bg-gray-500 transition duration-300 transform hover:scale-105 btn-gradient-hover">
@@ -443,6 +435,7 @@
         const savedNewsletterGrid = document.getElementById('savedNewsletterGrid'); // New DOM element
         const noSavedNewslettersMessage = document.getElementById('noSavedNewslettersMessage'); // New DOM element
         const newsletterReadingArea = document.getElementById('newsletterReadingArea'); // New: Area for active newsletter reading
+        const newsletterTitleDisplay = document.getElementById('newsletterTitleDisplay'); // New: for displaying newsletter title
         const selectedNewsletterContent = document.getElementById('selectedNewsletterContent'); // For review tab
         const noSelectedNewsletterContentMessage = document.getElementById('noSelectedNewsletterContentMessage'); // Changed message ID
         const backToNewsletterListBtn = document.getElementById('backToNewsletterListBtn'); // New: Back button
@@ -520,8 +513,9 @@
                     // Extract only the text content, excluding the inline pronounce button
                     const tempSpan = document.createElement('span');
                     tempSpan.innerHTML = span.innerHTML;
-                    const btn = tempSpan.querySelector('.pronounce-btn-inline');
-                    if (btn) btn.remove();
+                    // The inline pronounce button is no longer there, but keeping this for robustness if structure changes
+                    // const btn = tempSpan.querySelector('.pronounce-btn-inline');
+                    // if (btn) btn.remove();
                     return tempSpan.textContent.toLowerCase();
                 });
             });
@@ -750,6 +744,8 @@
             generateNewsletterBtn.disabled = true;
 
             const newsletterTopic = newsletterTopicInput.value.trim();
+            const defaultNewsletterTitle = newsletterTopic || `Bản tin ngẫu nhiên ${new Date().toLocaleDateString('vi-VN')}`;
+            const newsletterIcon = getNewsletterIcon(newsletterTopic); // Get icon based on topic
 
             const schema = {
                 type: "OBJECT",
@@ -778,8 +774,6 @@
                 return Array.from(highlightedSpans).map(span => {
                     const tempSpan = document.createElement('span');
                     tempSpan.innerHTML = span.innerHTML;
-                    const btn = tempSpan.querySelector('.pronounce-btn-inline');
-                    if (btn) btn.remove();
                     return `"${tempSpan.textContent}"`; // Get the actual word text
                 });
             }).join(', ');
@@ -787,10 +781,10 @@
             const exclusionPromptForNewsletter = wordsToExcludeFromNewsletterLLM ? `Hạn chế sử dụng các từ sau: ${wordsToExcludeFromNewsletterLLM}. ` : '';
 
 
-            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `về chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. ${exclusionPromptForNewsletter}Sau đó, liệt kê tất cả các từ vựng trình độ B2, C1, C2 trong bản tin đó, kèm theo nghĩa tiếng Việt, phiên âm IPA và cấp độ (B2 hoặc C1/C2). Trả về dưới dạng JSON với hai trường: 'newsletter_content' (nội dung bản tin thô) và 'vocabulary' (một mảng các đối tượng từ vựng).
+            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `về chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. ${exclusionPromptForNewsletter}Sau đó, liệt kê tất cả các từ vựng trình độ B2, C1, C2 trong bản tin đó, kèm theo nghĩa tiếng Việt, phiên âm IPA và cấp độ (B2 hoặc C1/C2). Trả về dưới dạng JSON với hai trường: 'newsletter_content' (nội dung bản tin thô, sử dụng \\n\\n cho các đoạn văn) và 'vocabulary' (một mảng các đối tượng từ vựng).
             Ví dụ JSON:
             {
-              "newsletter_content": "The ubiquitous nature of technology has transformed our daily lives...",
+              "newsletter_content": "The ubiquitous nature of technology has transformed our daily lives.\\n\\nThis transformation is evident in various sectors...",
               "vocabulary": [
                 {
                   "word": "ubiquitous",
@@ -813,6 +807,9 @@
                 let newsletterText = data.newsletter_content;
                 const vocabularyWords = data.vocabulary;
 
+                // Process newsletterText for paragraph breaks
+                newsletterText = newsletterText.split('\n\n').map(p => `<p class="mb-4">${p.trim()}</p>`).join('');
+
                 // Set to track words that have already been highlighted in this specific newsletter generation
                 const wordsHighlightedInCurrentNewsletter = new Set();
 
@@ -824,13 +821,13 @@
                     const lowerCaseCleanWord = cleanWord.toLowerCase();
 
                     // Only highlight if this word has NOT already been highlighted in *this specific newsletter generation*.
-                    // No check against isDuplicateWordInSavedData(cleanWord) as per user's request for newsletter.
                     if (wordsHighlightedInCurrentNewsletter.has(lowerCaseCleanWord)) {
                         continue; // Skip if already highlighted in this newsletter
                     }
 
                     const levelClass = item.level === 'B2' ? 'b2-level' : 'c1-c2-level';
-                    const replacementHtml = `<span class="highlighted-word ${levelClass}" data-meaning="${item.meaning}" data-ipa="${item.ipa}">${cleanWord}<button class="pronounce-btn pronounce-btn-inline" data-word="${cleanWord}" title="Nghe phát âm">&#128266;</button></span>`;
+                    // Removed pronounce-btn-inline from replacementHtml
+                    const replacementHtml = `<span class="highlighted-word ${levelClass}" data-meaning="${item.meaning}" data-ipa="${item.ipa}">${cleanWord}</span>`;
 
                     // Find the first occurrence of the word in the current newsletterText
                     // Use a regex with word boundaries to ensure whole word matching
@@ -844,6 +841,10 @@
                     }
                 }
                 generatedNewsletterHtml = newsletterText;
+                // Store title and icon along with content
+                newsletterContentDiv.dataset.title = defaultNewsletterTitle;
+                newsletterContentDiv.dataset.icon = newsletterIcon;
+
                 renderGeneratedNewsletter();
             } catch (error) {
                 newsletterError.textContent = error.message;
@@ -860,20 +861,29 @@
                 newsletterContentDiv.classList.remove('hidden');
                 noNewsletterMessage.classList.add('hidden');
                 saveNewsletterBtn.classList.remove('hidden');
-                // Attach event listeners to newly created inline pronounce buttons
-                newsletterContentDiv.querySelectorAll('.pronounce-btn-inline').forEach(button => {
-                    button.addEventListener('click', (event) => {
-                        event.stopPropagation(); // Prevent popup from showing when clicking pronounce button
-                        const wordToSpeak = event.target.dataset.word;
-                        speakWord(wordToSpeak);
-                    });
-                });
+                // No need to attach event listeners to inline pronounce buttons as they are removed.
+                // The main click listener on selectedNewsletterContent (or newsletterContentDiv) will handle pronunciation.
             } else {
                 newsletterContentDiv.innerHTML = '';
                 newsletterContentDiv.classList.add('hidden');
                 noNewsletterMessage.classList.remove('hidden');
                 saveNewsletterBtn.classList.add('hidden');
             }
+        }
+
+        // Function to get a lively icon based on topic
+        function getNewsletterIcon(topic) {
+            const lowerTopic = topic.toLowerCase();
+            if (lowerTopic.includes('công nghệ') || lowerTopic.includes('technology')) return '💻';
+            if (lowerTopic.includes('môi trường') || lowerTopic.includes('environment') || lowerTopic.includes('green living')) return '🌳';
+            if (lowerTopic.includes('kinh tế') || lowerTopic.includes('economy')) return '📈';
+            if (lowerTopic.includes('khoa học') || lowerTopic.includes('science')) return '🔬';
+            if (lowerTopic.includes('y tế') || lowerTopic.includes('health')) return '🏥';
+            if (lowerTopic.includes('giáo dục') || lowerTopic.includes('education')) return '📚';
+            if (lowerTopic.includes('nghệ thuật') || lowerTopic.includes('art')) return '🎨';
+            if (lowerTopic.includes('du lịch') || lowerTopic.includes('travel')) return '✈️';
+            if (lowerTopic.includes('xã hội') || lowerTopic.includes('society')) return '🤝';
+            return '📰'; // Default icon for general news
         }
 
         // --- Save Data Functions ---
@@ -903,7 +913,8 @@
             }
             const newNewsletter = {
                 id: Date.now(),
-                name: newsletterTopicInput.value.trim() || `Bản tin ngẫu nhiên ${new Date().toLocaleDateString('vi-VN')}`,
+                name: newsletterContentDiv.dataset.title, // Use the title generated
+                icon: newsletterContentDiv.dataset.icon, // Use the icon generated
                 content: generatedNewsletterHtml
             };
             savedNewsletters.push(newNewsletter);
@@ -1119,6 +1130,10 @@
                 selectedNewsletterContent.innerHTML = selectedNewsletter.content;
                 noSelectedNewsletterContentMessage.classList.add('hidden');
                 
+                // Display newsletter title and icon
+                newsletterTitleDisplay.innerHTML = `${selectedNewsletter.icon} ${selectedNewsletter.name}`;
+                newsletterTitleDisplay.classList.remove('hidden');
+
                 // Hide flashcard sections if they are visible
                 flashcardListContainer.classList.remove('is-visible');
                 flashcardListContainer.classList.add('hidden');
@@ -1131,14 +1146,8 @@
                 setTimeout(() => {
                     newsletterReadingArea.classList.remove('hidden');
                     newsletterReadingArea.classList.add('is-visible'); // Show the reading area with transition
-                    // Attach event listeners to newly created inline pronounce buttons in the reading area
-                    selectedNewsletterContent.querySelectorAll('.pronounce-btn-inline').forEach(button => {
-                        button.addEventListener('click', (event) => {
-                            event.stopPropagation(); // Prevent popup from showing when clicking pronounce button
-                            const wordToSpeak = event.target.dataset.word;
-                            speakWord(wordToSpeak);
-                        });
-                    });
+                    // No need to attach event listeners to inline pronounce buttons as they are removed.
+                    // The main click listener on selectedNewsletterContent will handle pronunciation.
                 }, 500); // Delay matches transition duration
             }
         }
@@ -1163,6 +1172,7 @@
             // Always ensure the reading area is hidden
             newsletterReadingArea.classList.add('hidden');
             newsletterReadingArea.classList.remove('is-visible');
+            newsletterTitleDisplay.classList.add('hidden'); // Hide title when showing list
 
             if (savedNewsletters.length > 0) {
                 noSavedNewslettersMessage.classList.add('hidden');
@@ -1170,7 +1180,7 @@
                     const card = document.createElement('div');
                     card.className = 'bg-gray-800 p-4 rounded-lg shadow-md flex flex-col justify-between';
                     card.innerHTML = `
-                        <h4 class="text-xl font-semibold text-purple-300 mb-2">${nl.name}</h4>
+                        <h4 class="text-xl font-semibold text-purple-300 mb-2 flex items-center">${nl.icon} <span class="ml-2">${nl.name}</span></h4>
                         <div class="flex flex-col space-y-2">
                             <button class="read-newsletter-btn px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-md hover:from-blue-600 hover:to-cyan-600 transition duration-300 btn-gradient-hover" data-id="${nl.id}">Đọc</button>
                             <button class="delete-newsletter-btn px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-300 btn-gradient-hover" data-id="${nl.id}">Xóa</button>
@@ -1202,47 +1212,53 @@
             selectedNewsletterContent.innerHTML = '';
             selectedNewsletterContent.classList.add('hidden'); // Ensure it's hidden when resetting
             noSelectedNewsletterContentMessage.classList.remove('hidden');
+            newsletterTitleDisplay.innerHTML = ''; // Clear title
+            newsletterTitleDisplay.classList.add('hidden'); // Hide title
         }
 
         // Function to handle word clicks (used by both newsletterContentDiv and selectedNewsletterContent)
         function handleWordClick(event) {
             const target = event.target;
-            // Ensure click is on the highlighted word itself, not the pronounce button inside it
-            if (target.classList.contains('highlighted-word') && !target.classList.contains('pronounce-btn-inline')) {
+            // Ensure click is on the highlighted word itself
+            if (target.classList.contains('highlighted-word')) {
                 const meaning = target.dataset.meaning;
                 const ipa = target.dataset.ipa;
+                const wordToSpeak = target.textContent; // Get the text content of the clicked word
+
+                speakWord(wordToSpeak); // Pronounce the word
 
                 popupMeaning.textContent = meaning;
                 popupIPA.textContent = ipa;
 
-                // Position the popup using fixed positioning relative to the viewport
+                // Position the popup using absolute positioning relative to the document
                 const rect = target.getBoundingClientRect();
-                // Calculate horizontal center of the target word for better alignment
                 const targetCenterX = rect.left + (rect.width / 2);
-                const popupWidth = wordPopup.offsetWidth; // Get current width of popup
+                
+                // Temporarily show popup to get its width for centering
+                wordPopup.classList.remove('hidden');
+                wordPopup.classList.add('is-visible');
+                const popupWidth = wordPopup.offsetWidth; 
+
                 let popupLeft = targetCenterX - (popupWidth / 2);
 
-                // Prevent popup from going off-screen to the left
-                if (popupLeft < 10) { // 10px padding from left edge
+                // Adjust for viewport boundaries
+                if (popupLeft < 10) { 
                     popupLeft = 10;
                 }
-                // Prevent popup from going off-screen to the right
-                if (popupLeft + popupWidth > window.innerWidth - 10) { // 10px padding from right edge
+                if (popupLeft + popupWidth > window.innerWidth - 10) { 
                     popupLeft = window.innerWidth - popupWidth - 10;
                 }
 
-                wordPopup.style.left = `${popupLeft}px`;
-                wordPopup.style.top = `${rect.bottom + 5}px`; // 5px below the word
+                // Position relative to the document, considering scroll position
+                wordPopup.style.left = `${popupLeft + window.scrollX}px`;
+                wordPopup.style.top = `${rect.bottom + window.scrollY + 5}px`; // 5px below the word
                 
-                wordPopup.classList.remove('hidden');
-                wordPopup.classList.add('is-visible'); // Trigger transition
-
                 // Add click effect to the word itself
                 target.classList.add('clicked-effect');
                 setTimeout(() => {
                     target.classList.remove('clicked-effect');
                 }, 300); // Match animation duration
-            } else if (!target.classList.contains('pronounce-btn-inline')) { // Hide if click outside highlighted word or its pronounce button
+            } else { // Hide popup if click outside highlighted word
                 wordPopup.classList.remove('is-visible'); // Trigger transition
                 setTimeout(() => {
                     wordPopup.classList.add('hidden');
@@ -1257,8 +1273,8 @@
 
         // Hide popup when clicking anywhere else on the document
         document.addEventListener('click', (event) => {
-            // Check if the click was not inside the popup AND not on a highlighted word AND not on an inline pronounce button
-            if (!wordPopup.contains(event.target) && !event.target.classList.contains('highlighted-word') && !event.target.classList.contains('pronounce-btn-inline') && wordPopup.classList.contains('is-visible')) {
+            // Check if the click was not inside the popup AND not on a highlighted word
+            if (!wordPopup.contains(event.target) && !event.target.classList.contains('highlighted-word') && wordPopup.classList.contains('is-visible')) {
                 wordPopup.classList.remove('is-visible');
                 setTimeout(() => {
                     wordPopup.classList.add('hidden');
