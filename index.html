@@ -876,8 +876,8 @@
             flashcardLearningArea.classList.add('hidden'); // Hide the learning area immediately after transition starts
             
             setTimeout(() => {
-                flashcardListContainer.classList.remove('hidden');
-                flashcardListContainer.classList.add('is-visible'); // Show the list of sets with transition
+                renderSavedFlashcards(); // Re-render flashcard list
+                renderSavedNewsletters(); // Re-render newsletter list to ensure it's visible
                 resetFlashcardDisplay(); // Reset display state
             }, 500); // Delay matches transition duration
         });
@@ -1060,8 +1060,8 @@
             newsletterReadingArea.classList.add('hidden'); // Hide the reading area immediately after transition starts
             
             setTimeout(() => {
-                newsletterListContainer.classList.remove('hidden');
-                newsletterListContainer.classList.add('is-visible'); // Show the list of sets with transition
+                renderSavedFlashcards(); // Re-render flashcard list to ensure it's visible
+                renderSavedNewsletters(); // Re-render newsletter list
                 resetNewsletterDisplay(); // Reset display state
             }, 500); // Delay matches transition duration
         });
