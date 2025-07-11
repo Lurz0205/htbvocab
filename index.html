@@ -175,7 +175,7 @@
         #wordPopup {
             position: absolute; /* Changed from fixed to absolute */
             z-index: 1001; /* Higher than overlay */
-            padding: 0.5rem 0.75rem; /* Adjusted padding - made smaller */
+            padding: 0.75rem 1rem; /* Adjusted padding */
             background-color: #6d28d9; /* purple-700 */
             color: white;
             border-radius: 0.5rem; /* Adjusted border-radius */
@@ -185,8 +185,6 @@
             transform: translateY(-5px); /* Slight initial offset for transition */
             opacity: 0;
             visibility: hidden;
-            max-width: 250px; /* Added max-width */
-            word-wrap: break-word; /* Ensure long words wrap */
         }
         #wordPopup.is-visible {
             opacity: 1;
@@ -369,6 +367,7 @@
                 <!-- Pop-up for word meaning -->
                 <div id="wordPopup" class="word-popup p-3 bg-purple-700 text-white rounded-lg shadow-xl border border-purple-500 hidden">
                     <p id="popupMeaning" class="font-bold"></p>
+                    <p id="popupPartOfSpeech" class="text-sm italic"></p> <!-- New: for part of speech -->
                     <p id="popupIPA" class="text-sm italic"></p>
                 </div>
             </div>
@@ -444,11 +443,15 @@
         const wordPopup = document.getElementById('wordPopup');
         const popupMeaning = document.getElementById('popupMeaning');
         const popupIPA = document.getElementById('popupIPA');
+        const popupPartOfSpeech = document.getElementById('popupPartOfSpeech'); // New: DOM element for part of speech
 
         // Custom Alert DOM elements
         const customAlertOverlay = document.getElementById('customAlertOverlay');
         const customAlertMessage = document.getElementById('customAlertMessage');
         const customAlertCloseBtn = document.getElementById('customAlertCloseBtn');
+
+        // Reference to the main content area for positioning calculations
+        const main = document.querySelector('main'); 
 
         // --- Utility Functions ---
 
@@ -621,9 +624,10 @@
                         "word": { "type": "STRING" },
                         "meaning": { "type": "STRING" },
                         "ipa": { "type": "STRING" },
-                        "example": { "type": "STRING" }
+                        "example": { "type": "STRING" },
+                        "partOfSpeech": { "type": "STRING" } // New: Added partOfSpeech
                     },
-                    "propertyOrdering": ["word", "meaning", "ipa", "example"]
+                    "propertyOrdering": ["word", "meaning", "ipa", "example", "partOfSpeech"] // New: Added partOfSpeech
                 }
             };
 
@@ -640,13 +644,14 @@
                     const wordsToExcludeFromLLM = currentGeneratedWordsForSession.map(w => `"${w.word}"`).join(', ');
                     const exclusionPrompt = wordsToExcludeFromLLM ? `Không được trùng lặp với các từ sau: ${wordsToExcludeFromLLM}. ` : '';
 
-                    const prompt = `Tạo một danh sách ${requestCount} từ vựng tiếng Anh trình độ C1/C2 ${vocabTopic ? `liên quan đến chủ đề "${vocabTopic}"` : 'ngẫu nhiên'}. ${exclusionPrompt}Với mỗi từ, cung cấp nghĩa tiếng Việt, phiên âm IPA và một câu ví dụ. Định dạng JSON như sau:
+                    const prompt = `Tạo một danh sách ${requestCount} từ vựng tiếng Anh trình độ C1/C2 ${vocabTopic ? `liên quan đến chủ đề "${vocabTopic}"` : 'ngẫu nhiên'}. ${exclusionPrompt}Với mỗi từ, cung cấp nghĩa tiếng Việt, phiên âm IPA, loại từ (ví dụ: "n.", "v.", "adj."), và một câu ví dụ. Định dạng JSON như sau:
                     [
                       {
                         "word": "Từ vựng",
                         "meaning": "Nghĩa tiếng Việt",
                         "ipa": "Phiên âm IPA",
-                        "example": "Câu ví dụ"
+                        "example": "Câu ví dụ",
+                        "partOfSpeech": "Loại từ"
                       }
                     ]
                     `;
@@ -708,7 +713,7 @@
                             <p class="text-lg font-medium text-purple-300">${item.word} 
                                 <button class="pronounce-btn" data-word="${item.word}" title="Nghe phát âm">&#128266;</button>
                             </p>
-                            <p class="text-gray-300 text-sm italic">${item.meaning} - ${item.ipa}</p>
+                            <p class="text-gray-300 text-sm italic">(${item.partOfSpeech}) - ${item.meaning} - ${item.ipa}</p> <!-- Modified: Added partOfSpeech -->
                             <p class="text-gray-400 text-sm">"${item.example}"</p>
                         </div>
                         <button class="delete-vocab-btn ml-4 px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-200 btn-gradient-hover" data-index="${index}">Xóa</button>
@@ -734,7 +739,7 @@
                 noVocabMessage.classList.remove('hidden');
                 saveFlashcardsBtn.classList.add('hidden');
             }
-        });
+        }
 
         // --- Generate Newsletter Function ---
         generateNewsletterBtn.addEventListener('click', async () => {
@@ -761,9 +766,10 @@
                                 "word": { "type": "STRING" },
                                 "meaning": { "type": "STRING" },
                                 "ipa": { "type": "STRING" },
-                                "level": { "type": "STRING", "enum": ["B2", "C1/C2"] }
+                                "level": { "type": "STRING", "enum": ["B2", "C1/C2"] },
+                                "partOfSpeech": { "type": "STRING" } // New: Added partOfSpeech
                             },
-                            "propertyOrdering": ["word", "meaning", "ipa", "level"]
+                            "propertyOrdering": ["word", "meaning", "ipa", "level", "partOfSpeech"] // New: Added partOfSpeech
                         }
                     }
                 }
@@ -783,7 +789,7 @@
             const exclusionPromptForNewsletter = wordsToExcludeFromNewsletterLLM ? `Hạn chế sử dụng các từ sau: ${wordsToExcludeFromNewsletterLLM}. ` : '';
 
 
-            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `về chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. ${exclusionPromptForNewsletter}Sau đó, liệt kê tất cả các từ vựng trình độ B2, C1, C2 trong bản tin đó, kèm theo nghĩa tiếng Việt, phiên âm IPA và cấp độ (B2 hoặc C1/C2). Trả về dưới dạng JSON với hai trường: 'newsletter_content' (nội dung bản tin thô, sử dụng \\n\\n cho các đoạn văn) và 'vocabulary' (một mảng các đối tượng từ vựng).
+            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `về chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. ${exclusionPromptForNewsletter}Sau đó, liệt kê tất cả các từ vựng trình độ B2, C1, C2 trong bản tin đó, kèm theo nghĩa tiếng Việt, phiên âm IPA, loại từ (ví dụ: "n.", "v.", "adj."), và cấp độ (B2 hoặc C1/C2). Trả về dưới dạng JSON với hai trường: 'newsletter_content' (nội dung bản tin thô, sử dụng \\n\\n cho các đoạn văn) và 'vocabulary' (một mảng các đối tượng từ vựng).
             Ví dụ JSON:
             {
               "newsletter_content": "The ubiquitous nature of technology has transformed our daily lives.\\n\\nThis transformation is evident in various sectors...",
@@ -792,13 +798,15 @@
                   "word": "ubiquitous",
                   "meaning": "phổ biến",
                   "ipa": "/juːˈbɪkwitəs/",
-                  "level": "C1/C2"
+                  "level": "C1/C2",
+                  "partOfSpeech": "adj."
                 },
                 {
                   "word": "transform",
                   "meaning": "biến đổi",
                   "ipa": "/trænsˈfɔːrm/",
-                  "level": "B2"
+                  "level": "B2",
+                  "partOfSpeech": "v."
                 }
               ]
             }
@@ -829,7 +837,7 @@
 
                     const levelClass = item.level === 'B2' ? 'b2-level' : 'c1-c2-level';
                     // Removed pronounce-btn-inline from replacementHtml
-                    const replacementHtml = `<span class="highlighted-word ${levelClass}" data-meaning="${item.meaning}" data-ipa="${item.ipa}">${cleanWord}</span>`;
+                    const replacementHtml = `<span class="highlighted-word ${levelClass}" data-meaning="${item.meaning}" data-ipa="${item.ipa}" data-part-of-speech="${item.partOfSpeech}">${cleanWord}</span>`; // New: Added data-part-of-speech
 
                     // Find the first occurrence of the word in the current newsletterText
                     // Use a regex with word boundaries to ensure whole word matching
@@ -1123,7 +1131,7 @@
 
         // Function to read a newsletter
         function readNewsletter(nlId) {
-            const selectedNewsletter = savedNewsletters.find(nl => s.id === nlId);
+            const selectedNewsletter = savedNewsletters.find(nl => nl.id === nlId);
             if (selectedNewsletter) {
                 activeNewsletterId = nlId; // Set the active newsletter
                 
@@ -1133,7 +1141,7 @@
                 noSelectedNewsletterContentMessage.classList.add('hidden');
                 
                 // Display newsletter title and icon
-                newsletterTitleDisplay.innerHTML = `${selectedNewsletter.icon} <span class="ml-2">${selectedNewsletter.name}</span>`;
+                newsletterTitleDisplay.innerHTML = `${selectedNewsletter.icon} ${selectedNewsletter.name}`;
                 newsletterTitleDisplay.classList.remove('hidden');
 
                 // Hide flashcard sections if they are visible
@@ -1225,46 +1233,60 @@
             if (target.classList.contains('highlighted-word')) {
                 const meaning = target.dataset.meaning;
                 const ipa = target.dataset.ipa;
-                const wordToSpeak = target.textContent; // Get the text content of the clicked word
+                const partOfSpeech = target.dataset.partOfSpeech; // New: Get part of speech
+                const wordToSpeak = target.textContent;
 
-                speakWord(wordToSpeak); // Pronounce the word
+                speakWord(wordToSpeak);
 
                 popupMeaning.textContent = meaning;
                 popupIPA.textContent = ipa;
+                popupPartOfSpeech.textContent = `(${partOfSpeech})`; // New: Set part of speech, add parentheses
 
-                // Position the popup using absolute positioning relative to the document
-                const rect = target.getBoundingClientRect();
-                const targetCenterX = rect.left + (rect.width / 2);
+                const targetRect = target.getBoundingClientRect();
                 
-                // Temporarily show popup to get its width for centering
                 wordPopup.classList.remove('hidden');
                 wordPopup.classList.add('is-visible');
                 const popupWidth = wordPopup.offsetWidth; 
+                const popupHeight = wordPopup.offsetHeight;
 
-                let popupLeft = targetCenterX - (popupWidth / 2);
-
-                // Adjust for viewport boundaries
-                if (popupLeft < 10) { 
+                // Calculate left position relative to the viewport
+                let popupLeft = targetRect.left + (targetRect.width / 2) - (popupWidth / 2);
+                
+                // Adjust for viewport left boundary
+                if (popupLeft < 10) {
                     popupLeft = 10;
                 }
-                if (popupLeft + popupWidth > window.innerWidth - 10) { 
+                // Adjust for viewport right boundary
+                if (popupLeft + popupWidth > window.innerWidth - 10) {
                     popupLeft = window.innerWidth - popupWidth - 10;
                 }
 
-                // Position relative to the document, considering scroll position
-                wordPopup.style.left = `${popupLeft + window.scrollX}px`;
-                wordPopup.style.top = `${rect.bottom + window.scrollY + 2}px`; // Reduced vertical offset to 2px
+                // Calculate top position relative to the viewport
+                let popupTop;
+                const spaceAbove = targetRect.top - popupHeight - 5; // 5px padding
+                const spaceBelow = window.innerHeight - targetRect.bottom - popupHeight - 5;
+
+                if (spaceAbove >= 0) { // Enough space above
+                    popupTop = targetRect.top - popupHeight - 5;
+                } else if (spaceBelow >= 0) { // Not enough space above, but enough below
+                    popupTop = targetRect.bottom + 5;
+                } else { // Not enough space either way, just place below
+                    popupTop = targetRect.bottom + 5;
+                }
+
+                // Apply positioning to the popup
+                wordPopup.style.left = `${popupLeft}px`;
+                wordPopup.style.top = `${popupTop}px`;
                 
-                // Add click effect to the word itself
                 target.classList.add('clicked-effect');
                 setTimeout(() => {
                     target.classList.remove('clicked-effect');
-                }, 300); // Match animation duration
-            } else { // Hide popup if click outside highlighted word
-                wordPopup.classList.remove('is-visible'); // Trigger transition
+                }, 300);
+            } else {
+                wordPopup.classList.remove('is-visible');
                 setTimeout(() => {
                     wordPopup.classList.add('hidden');
-                }, 200); // Delay matches transition duration
+                }, 200);
             }
         }
 
