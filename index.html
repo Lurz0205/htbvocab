@@ -45,6 +45,13 @@
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            opacity: 0; /* Start hidden */
+            visibility: hidden; /* Hide from screen readers */
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .custom-alert-overlay.is-visible {
+            opacity: 1;
+            visibility: visible;
         }
         .custom-alert-box {
             background-color: #1f2937; /* gray-800 */
@@ -55,6 +62,11 @@
             max-width: 400px;
             width: 90%;
             border: 1px solid #4b5563; /* gray-600 */
+            transform: scale(0.9); /* Start slightly smaller */
+            transition: transform 0.3s ease;
+        }
+        .custom-alert-overlay.is-visible .custom-alert-box {
+            transform: scale(1); /* Scale up when visible */
         }
         .custom-alert-box p {
             color: #d1d5db; /* gray-300 */
@@ -107,6 +119,32 @@
         .btn-gradient-hover:hover::before {
             transform: translateX(0%);
         }
+
+        /* Section Transition Styles */
+        /* These are for the main sections within the review tab */
+        #flashcardListContainer, #flashcardLearningArea, #newsletterListContainer, #newsletterReadingArea {
+            /* Use absolute positioning to prevent layout shifts during transitions */
+            position: absolute; 
+            width: 100%;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+            pointer-events: none; /* Disable interaction when hidden */
+        }
+        #flashcardListContainer.is-visible, #flashcardLearningArea.is-visible, #newsletterListContainer.is-visible, #newsletterReadingArea.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto; /* Enable interaction when visible */
+            position: static; /* Revert to normal flow when active */
+        }
+
+        /* Adjust main content for absolute positioning during transition */
+        main {
+            position: relative;
+            min-height: 500px; /* Ensure main has enough height for content */
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gray-900 text-white p-4 sm:p-6 lg:p-8">
@@ -115,7 +153,7 @@
     <div id="customAlertOverlay" class="custom-alert-overlay hidden">
         <div class="custom-alert-box">
             <p id="customAlertMessage"></p>
-            <button id="customAlertCloseBtn">Đóng</button>
+            <button id="customAlertCloseBtn" class="btn-gradient-hover">Đóng</button>
         </div>
     </div>
 
@@ -190,13 +228,13 @@
         </section>
 
         <!-- Review & Learn Section -->
-        <section id="review-learn" class="tab-content hidden">
+        <section id="review-learn" class="tab-content">
             <h2 class="text-3xl font-bold text-center text-purple-300 mb-8">Ôn Tập & Học Tập</h2>
 
             <!-- Learn via Flashcards Section -->
             <div class="mb-10 p-6 bg-gray-700 rounded-lg shadow-lg">
                 <h3 class="text-2xl font-semibold text-white mb-4 border-b border-gray-600 pb-3">1. Học qua Flashcard</h3>
-                <div id="flashcardListContainer"> <!-- Container for flashcard grid -->
+                <div id="flashcardListContainer" class="is-visible"> <!-- Container for flashcard grid -->
                     <div id="savedFlashcardGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                         <!-- Flashcard sets will be rendered here -->
                     </div>
@@ -245,7 +283,7 @@
             <!-- Learn via Newsletter Section -->
             <div class="p-6 bg-gray-700 rounded-lg shadow-lg">
                 <h3 class="text-2xl font-semibold text-white mb-4 border-b border-gray-600 pb-3">2. Học qua Bản tin</h3>
-                <div id="newsletterListContainer"> <!-- Container for newsletter grid -->
+                <div id="newsletterListContainer" class="is-visible"> <!-- Container for newsletter grid -->
                     <div id="savedNewsletterGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                         <!-- Newsletters will be rendered here -->
                     </div>
@@ -253,6 +291,11 @@
                 </div>
 
                 <div id="newsletterReadingArea" class="hidden"> <!-- New: Area for active newsletter reading -->
+                    <div class="flex justify-end mb-4">
+                        <button id="readNewsletterContentBtn" class="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-md hover:from-blue-600 hover:to-cyan-600 transition duration-300 btn-gradient-hover" title="Đọc bản tin">
+                            Đọc Bản Tin &#128266;
+                        </button>
+                    </div>
                     <div id="selectedNewsletterContent" class="text-gray-300 leading-relaxed text-base bg-gray-800 p-4 rounded-md shadow-inner"></div>
                     <p id="noSelectedNewsletterContentMessage" class="text-gray-400 text-center hidden">Vui lòng chọn một bản tin để đọc và học.</p>
                     <button id="backToNewsletterListBtn" class="mt-6 w-full py-3 bg-gray-600 text-white font-bold rounded-lg shadow-lg hover:bg-gray-500 transition duration-300 transform hover:scale-105 btn-gradient-hover">
@@ -334,6 +377,7 @@
         const selectedNewsletterContent = document.getElementById('selectedNewsletterContent'); // For review tab
         const noSelectedNewsletterContentMessage = document.getElementById('noSelectedNewsletterContentMessage'); // Changed message ID
         const backToNewsletterListBtn = document.getElementById('backToNewsletterListBtn'); // New: Back button
+        const readNewsletterContentBtn = document.getElementById('readNewsletterContentBtn'); // New: Read Newsletter button
         const wordPopup = document.getElementById('wordPopup');
         const popupMeaning = document.getElementById('popupMeaning');
         const popupIPA = document.getElementById('popupIPA');
@@ -349,11 +393,16 @@
         function showCustomAlert(message) {
             customAlertMessage.textContent = message;
             customAlertOverlay.classList.remove('hidden');
+            customAlertOverlay.classList.add('is-visible');
         }
 
         // Hide custom alert
         customAlertCloseBtn.addEventListener('click', () => {
-            customAlertOverlay.classList.add('hidden');
+            customAlertOverlay.classList.remove('is-visible');
+            // Add a small delay for the transition to complete before hiding fully
+            setTimeout(() => {
+                customAlertOverlay.classList.add('hidden');
+            }, 300); 
         });
 
         // Load data from localStorage on page load
@@ -373,6 +422,8 @@
         // --- Pronunciation Function ---
         function speakWord(word, lang = 'en-US') {
             if ('speechSynthesis' in window) {
+                // Cancel any ongoing speech
+                speechSynthesis.cancel(); 
                 const utterance = new SpeechSynthesisUtterance(word);
                 utterance.lang = lang;
                 speechSynthesis.speak(utterance);
@@ -729,16 +780,27 @@
                 isFlipped = false;
                 activeFlashcardSetId = setId; // Set the active set
                 updateFlashcardDisplay();
-                flashcardListContainer.classList.add('hidden'); // Hide the list of sets
-                flashcardLearningArea.classList.remove('hidden'); // Show the learning area
+                
+                flashcardListContainer.classList.remove('is-visible');
+                flashcardListContainer.classList.add('hidden'); // Hide the list of sets immediately after transition starts
+                
+                setTimeout(() => {
+                    flashcardLearningArea.classList.remove('hidden');
+                    flashcardLearningArea.classList.add('is-visible'); // Show the learning area with transition
+                }, 500); // Delay matches transition duration
             }
         }
 
         // Function to go back to the flashcard list
         backToFlashcardListBtn.addEventListener('click', () => {
-            flashcardLearningArea.classList.add('hidden'); // Hide the learning area
-            flashcardListContainer.classList.remove('hidden'); // Show the list of sets
-            resetFlashcardDisplay(); // Reset display state
+            flashcardLearningArea.classList.remove('is-visible');
+            flashcardLearningArea.classList.add('hidden'); // Hide the learning area immediately after transition starts
+            
+            setTimeout(() => {
+                flashcardListContainer.classList.remove('hidden');
+                flashcardListContainer.classList.add('is-visible'); // Show the list of sets with transition
+                resetFlashcardDisplay(); // Reset display state
+            }, 500); // Delay matches transition duration
         });
 
 
@@ -884,17 +946,35 @@
                 selectedNewsletterContent.innerHTML = selectedNewsletter.content;
                 selectedNewsletterContent.classList.remove('hidden');
                 noSelectedNewsletterContentMessage.classList.add('hidden');
-                newsletterListContainer.classList.add('hidden'); // Hide the list of newsletters
-                newsletterReadingArea.classList.remove('hidden'); // Show the reading area
+                
+                newsletterListContainer.classList.remove('is-visible');
+                newsletterListContainer.classList.add('hidden'); // Hide the list of newsletters immediately after transition starts
+                
+                setTimeout(() => {
+                    newsletterReadingArea.classList.remove('hidden');
+                    newsletterReadingArea.classList.add('is-visible'); // Show the reading area with transition
+                }, 500); // Delay matches transition duration
             }
         }
 
         // Function to go back to the newsletter list
         backToNewsletterListBtn.addEventListener('click', () => {
-            newsletterReadingArea.classList.add('hidden'); // Hide the reading area
-            newsletterListContainer.classList.remove('hidden'); // Show the list of sets
-            resetNewsletterDisplay(); // Reset display state
+            newsletterReadingArea.classList.remove('is-visible');
+            newsletterReadingArea.classList.add('hidden'); // Hide the reading area immediately after transition starts
+            
+            setTimeout(() => {
+                newsletterListContainer.classList.remove('hidden');
+                newsletterListContainer.classList.add('is-visible'); // Show the list of sets with transition
+                resetNewsletterDisplay(); // Reset display state
+            }, 500); // Delay matches transition duration
         });
+
+        // Event listener for the "Đọc Bản Tin" button
+        readNewsletterContentBtn.addEventListener('click', () => {
+            const contentToSpeak = selectedNewsletterContent.textContent;
+            speakWord(contentToSpeak, 'en-US'); // Assuming newsletter is in English
+        });
+
 
         function renderSavedNewsletters() {
             savedNewsletterGrid.innerHTML = ''; // Clear current grid
