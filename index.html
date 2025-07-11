@@ -354,10 +354,10 @@
                 };
             }
 
-            // IMPORTANT: Replace "YOUR_GEMINI_API_KEY_HERE" with your actual Gemini API Key.
-            // You can get one from Google AI Studio: https://aistudio.google.com/app/apikey
+            // API Key của bạn
             const apiKey = "AIzaSyDe33qK44IF_aCXQEOwGqDCZ5iQCN9I5Qg"; 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            // Sử dụng mô hình gemini-2.5-flash
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
             try {
                 const response = await fetch(apiUrl, {
@@ -393,10 +393,9 @@
 
             const vocabTopic = vocabTopicInput.value.trim();
             const targetWordCount = 10;
-            const maxAttempts = 3; // Max attempts to get unique words
+            const maxAttempts = 5; // Tăng số lần thử để bù đắp từ trùng lặp
             let currentGeneratedWords = [];
-            let wordsAddedThisRound = 0;
-
+            
             const schema = {
                 type: "ARRAY",
                 items: {
@@ -415,11 +414,11 @@
                 for (let attempt = 0; attempt < maxAttempts; attempt++) {
                     const wordsNeeded = targetWordCount - currentGeneratedWords.length;
                     if (wordsNeeded <= 0) {
-                        break; // We have enough words
+                        break; // Đã đủ số lượng từ
                     }
 
-                    // Request slightly more words than needed to account for potential duplicates
-                    const requestCount = wordsNeeded + 2; // Request 2 extra words per attempt
+                    // Yêu cầu nhiều từ hơn một chút để bù đắp các từ trùng lặp
+                    const requestCount = wordsNeeded + 3; // Yêu cầu thêm 3 từ mỗi lần thử
                     const prompt = `Tạo một danh sách ${requestCount} từ vựng tiếng Anh trình độ C1/C2 ${vocabTopic ? `liên quan đến chủ đề "${vocabTopic}"` : 'ngẫu nhiên'}. Với mỗi từ, cung cấp nghĩa tiếng Việt, phiên âm IPA và một câu ví dụ. Định dạng JSON như sau:
                     [
                       {
@@ -432,21 +431,19 @@
                     `;
 
                     const data = await callGeminiAPI(prompt, schema);
-                    wordsAddedThisRound = 0; // Reset counter for this round
-
+                    
                     for (const item of data) {
                         if (currentGeneratedWords.length >= targetWordCount) {
-                            break; // Stop adding if we reached target
+                            break; // Dừng thêm nếu đã đạt số lượng mục tiêu
                         }
-                        // Check against already generated words and saved flashcards
+                        // Kiểm tra từ trùng lặp với các từ đã tạo trong phiên này và các bộ flashcard đã lưu
                         if (!currentGeneratedWords.some(w => w.word.toLowerCase() === item.word.toLowerCase()) && !isDuplicateWord(item.word)) {
                             currentGeneratedWords.push(item);
-                            wordsAddedThisRound++;
                         }
                     }
 
                     if (currentGeneratedWords.length === targetWordCount) {
-                        break; // Successfully got target number of words
+                        break; // Đã tạo đủ số lượng từ mục tiêu
                     }
                 }
 
@@ -454,7 +451,7 @@
                 renderGeneratedVocab();
 
                 if (generatedVocab.length < targetWordCount) {
-                    vocabError.textContent = `Chỉ tạo được ${generatedVocab.length} từ. Một số từ bị trùng lặp hoặc không thể tạo thêm.`;
+                    vocabError.textContent = `Chỉ tạo được ${generatedVocab.length} từ. Một số từ bị trùng lặp hoặc không thể tạo thêm. Vui lòng thử lại với chủ đề khác hoặc để trống.`;
                     vocabError.classList.remove('hidden');
                 } else {
                     vocabError.classList.add('hidden');
@@ -469,6 +466,13 @@
             }
         });
 
+        // Function to remove a vocabulary word
+        function removeVocabWord(index) {
+            generatedVocab.splice(index, 1); // Remove word from array
+            renderGeneratedVocab(); // Re-render the list
+            showCustomAlert('Đã xóa từ vựng.');
+        }
+
         function renderGeneratedVocab() {
             vocabList.innerHTML = '';
             if (generatedVocab.length > 0) {
@@ -481,8 +485,16 @@
                             <p class="text-gray-300 text-sm italic">${item.meaning} - ${item.ipa}</p>
                             <p class="text-gray-400 text-sm">"${item.example}"</p>
                         </div>
+                        <button class="delete-vocab-btn ml-4 px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-200" data-index="${index}">Xóa</button>
                     `;
                     vocabList.appendChild(li);
+                });
+                // Attach event listeners to delete buttons
+                document.querySelectorAll('.delete-vocab-btn').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        const index = parseInt(event.target.dataset.index);
+                        removeVocabWord(index);
+                    });
                 });
                 saveFlashcardsBtn.classList.remove('hidden');
             } else {
@@ -501,14 +513,34 @@
             generateNewsletterBtn.disabled = true;
 
             const newsletterTopic = newsletterTopicInput.value.trim();
-            // Explicitly tell AI not to use markdown
-            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `về chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. KHÔNG sử dụng bất kỳ định dạng Markdown nào như **bold** hay __underline__. Trong bản tin này, hãy sử dụng ít nhất 5-7 từ vựng trình độ C1/C2. Ngay sau mỗi từ vựng C1/C2, trong dấu ngoặc đơn, cung cấp nghĩa tiếng Việt và phiên âm IPA của từ đó. Ví dụ: "The ubiquitous (phổ biến - /juːˈbɪkwɪtəs/) nature of technology..." Đảm bảo các từ vựng được highlight không trùng lặp với các từ đã có trong các bộ flashcard đã lưu.`;
+            // Explicitly tell AI not to use markdown and no introductory/concluding phrases
+            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `về chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. KHÔNG sử dụng bất kỳ định dạng Markdown nào như **bold** hay __underline__. KHÔNG bao gồm bất kỳ lời giới thiệu hay kết luận nào như "Here's a news bulletin", "In conclusion", "Okay, here's a news bulletin on...", "This report details...", "The following news report...", "Here is a brief news update...", "This newsletter focuses on...", "We're bringing you a report on...", "Here's an overview of...", "This article discusses...", "Below is a news piece on...", "This bulletin provides information on...", "Here's a summary of...", "In this report, we cover...". Chỉ cung cấp nội dung bản tin. Trong bản tin này, hãy sử dụng ít nhất 5-7 từ vựng trình độ C1/C2. Ngay sau mỗi từ vựng C1/C2, trong dấu ngoặc đơn, cung cấp nghĩa tiếng Việt và phiên âm IPA của từ đó. Ví dụ: "The ubiquitous (phổ biến - /juːˈbɪkwɪtəs/) nature of technology..." Đảm bảo các từ vựng được highlight không trùng lặp với các từ đã có trong các bộ flashcard đã lưu.`;
 
             try {
-                const text = await callGeminiAPI(prompt);
+                let text = await callGeminiAPI(prompt);
+
+                // Post-processing to remove common introductory phrases if AI still generates them
+                const introPhrases = [
+                    /^Okay, here's a news bulletin(?: on .*?)?:/,
+                    /^Here's a short news report(?: on .*?)?:/,
+                    /^News Bulletin: (?:.*?)?:/,
+                    /^In this report, we cover(?:.*?)?:/,
+                    /^This report details(?:.*?)?:/,
+                    /^The following news report(?:.*?)?:/,
+                    /^Here is a brief news update(?:.*?)?:/,
+                    /^This newsletter focuses on(?:.*?)?:/,
+                    /^We're bringing you a report on(?:.*?)?:/,
+                    /^Here's an overview of(?:.*?)?:/,
+                    /^This article discusses(?:.*?)?:/,
+                    /^Below is a news piece on(?:.*?)?:/,
+                    /^This bulletin provides information on(?:.*?)?:/,
+                    /^Here's a summary of(?:.*?)?:/
+                ];
+                for (const phraseRegex of introPhrases) {
+                    text = text.replace(phraseRegex, '').trim();
+                }
+
                 // Regex to find words in "WORD (meaning - ipa)" format, and also handle potential markdown remnants
-                // This regex is more robust to capture words that might still have ** or __ around them,
-                // and then strip them before creating the span.
                 const processedText = text.replace(/(\*\*|__)?([A-Za-z'-]+)(\*\*|__)?\s*\(([^)]*?)\s*-\s*([^)]*?)\)/g, (match, preBold, word, postBold, meaning, ipa) => {
                     // Clean the word from any markdown bold/underline remnants
                     const cleanWord = word.replace(/\*\*|__/g, '');
