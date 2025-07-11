@@ -644,14 +644,15 @@
                     const wordsToExcludeFromLLM = currentGeneratedWordsForSession.map(w => `"${w.word}"`).join(', ');
                     const exclusionPrompt = wordsToExcludeFromLLM ? `Không được trùng lặp với các từ sau: ${wordsToExcludeFromLLM}. ` : '';
 
-                    const prompt = `Tạo một danh sách ${requestCount} từ vựng tiếng Anh trình độ C1/C2 ${vocabTopic ? `liên quan đến chủ đề "${vocabTopic}"` : 'ngẫu nhiên'}. ${exclusionPrompt}Với mỗi từ, cung cấp nghĩa tiếng Việt, phiên âm IPA, loại từ (ví dụ: "n.", "v.", "adj."), và một câu ví dụ. Định dạng JSON như sau:
+                    // Updated prompt to explicitly state partOfSpeech is mandatory and in short form
+                    const prompt = `Tạo một danh sách ${requestCount} từ vựng tiếng Anh trình độ C1/C2 ${vocabTopic ? `liên quan đến chủ đề "${vocabTopic}"` : 'ngẫu nhiên'}. ${exclusionPrompt}Với mỗi từ, cung cấp nghĩa tiếng Việt, phiên âm IPA, loại từ (bắt buộc, dạng viết tắt như "n.", "v.", "adj."), và một câu ví dụ. Định dạng JSON như sau:
                     [
                       {
                         "word": "Từ vựng",
                         "meaning": "Nghĩa tiếng Việt",
                         "ipa": "Phiên âm IPA",
                         "example": "Câu ví dụ",
-                        "partOfSpeech": "Loại từ"
+                        "partOfSpeech": "Loại từ (vd: n., v., adj.)"
                       }
                     ]
                     `;
@@ -708,12 +709,14 @@
                 generatedVocab.forEach((item, index) => {
                     const li = document.createElement('li');
                     li.className = 'flex flex-col md:flex-row items-start md:items-center p-3 bg-gray-700 rounded-md shadow-sm';
+                    // Add fallback for partOfSpeech if it's empty or undefined
+                    const partOfSpeechDisplay = item.partOfSpeech ? `(${item.partOfSpeech})` : '';
                     li.innerHTML = `
                         <div class="flex-1">
                             <p class="text-lg font-medium text-purple-300">${item.word} 
                                 <button class="pronounce-btn" data-word="${item.word}" title="Nghe phát âm">&#128266;</button>
                             </p>
-                            <p class="text-gray-300 text-sm italic">(${item.partOfSpeech}) - ${item.meaning} - ${item.ipa}</p> <!-- Modified: Added partOfSpeech -->
+                            <p class="text-gray-300 text-sm italic">${partOfSpeechDisplay} - ${item.meaning} - ${item.ipa}</p>
                             <p class="text-gray-400 text-sm">"${item.example}"</p>
                         </div>
                         <button class="delete-vocab-btn ml-4 px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-200 btn-gradient-hover" data-index="${index}">Xóa</button>
@@ -789,7 +792,8 @@
             const exclusionPromptForNewsletter = wordsToExcludeFromNewsletterLLM ? `Hạn chế sử dụng các từ sau: ${wordsToExcludeFromNewsletterLLM}. ` : '';
 
 
-            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `về chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. ${exclusionPromptForNewsletter}Sau đó, liệt kê tất cả các từ vựng trình độ B2, C1, C2 trong bản tin đó, kèm theo nghĩa tiếng Việt, phiên âm IPA, loại từ (ví dụ: "n.", "v.", "adj."), và cấp độ (B2 hoặc C1/C2). Trả về dưới dạng JSON với hai trường: 'newsletter_content' (nội dung bản tin thô, sử dụng \\n\\n cho các đoạn văn) và 'vocabulary' (một mảng các đối tượng từ vựng).
+            // Updated prompt to explicitly state partOfSpeech is mandatory and in short form
+            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `về chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. ${exclusionPromptForNewsletter}Sau đó, liệt kê tất cả các từ vựng trình độ B2, C1, C2 trong bản tin đó, kèm theo nghĩa tiếng Việt, phiên âm IPA, loại từ (bắt buộc, dạng viết tắt như "n.", "v.", "adj."), và cấp độ (B2 hoặc C1/C2). Trả về dưới dạng JSON với hai trường: 'newsletter_content' (nội dung bản tin thô, sử dụng \\n\\n cho các đoạn văn) và 'vocabulary' (một mảng các đối tượng từ vựng).
             Ví dụ JSON:
             {
               "newsletter_content": "The ubiquitous nature of technology has transformed our daily lives.\\n\\nThis transformation is evident in various sectors...",
@@ -836,8 +840,9 @@
                     }
 
                     const levelClass = item.level === 'B2' ? 'b2-level' : 'c1-c2-level';
-                    // Removed pronounce-btn-inline from replacementHtml
-                    const replacementHtml = `<span class="highlighted-word ${levelClass}" data-meaning="${item.meaning}" data-ipa="${item.ipa}" data-part-of-speech="${item.partOfSpeech}">${cleanWord}</span>`; // New: Added data-part-of-speech
+                    // Added fallback for partOfSpeech in data-attribute
+                    const partOfSpeechAttr = item.partOfSpeech ? item.partOfSpeech : '';
+                    const replacementHtml = `<span class="highlighted-word ${levelClass}" data-meaning="${item.meaning}" data-ipa="${item.ipa}" data-part-of-speech="${partOfSpeechAttr}">${cleanWord}</span>`; 
 
                     // Find the first occurrence of the word in the current newsletterText
                     // Use a regex with word boundaries to ensure whole word matching
@@ -850,7 +855,10 @@
                         wordsHighlightedInCurrentNewsletter.add(lowerCaseCleanWord); // Mark as highlighted for this newsletter
                     }
                 }
-                generatedNewsletterHtml = newsletterText;
+                
+                // Add expressive icons to the newsletter content
+                generatedNewsletterHtml = addExpressiveIconsToNewsletter(newsletterText, newsletterTopic);
+
                 // Store title and icon along with content
                 newsletterContentDiv.dataset.title = defaultNewsletterTitle;
                 newsletterContentDiv.dataset.icon = newsletterIcon;
@@ -864,6 +872,63 @@
                 generateNewsletterBtn.disabled = false;
             }
         });
+
+        // New function to add expressive icons
+        function addExpressiveIconsToNewsletter(htmlContent, topic) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlContent, 'text/html');
+            const paragraphs = doc.querySelectorAll('p');
+
+            const topicEmojis = {
+                'công nghệ': ['💻', '🤖', '💡', '📡'],
+                'technology': ['💻', '🤖', '💡', '📡'],
+                'môi trường': ['🌳', '🌍', '♻️', '🌱', '💧'],
+                'environment': ['🌳', '🌍', '♻️', '🌱', '💧'],
+                'kinh tế': ['📈', '💰', '📊', '💼', '🏦'],
+                'economy': ['📈', '💰', '📊', '💼', '🏦'],
+                'khoa học': ['🔬', '🧪', '🔭', '🧬', '⚛️'],
+                'science': ['🔬', '🧪', '🔭', '🧬', '⚛️'],
+                'y tế': ['🏥', '💊', '🩺', '❤️', '🩹'],
+                'health': ['🏥', '💊', '🩺', '❤️', '🩹'],
+                'giáo dục': ['📚', '🎓', '✏️', '🏫', '🧠'],
+                'education': ['📚', '🎓', '✏️', '🏫', '🧠'],
+                'nghệ thuật': ['🎨', '🎭', '🎶', '🎬', '🖼️'],
+                'art': ['🎨', '🎭', '🎶', '🎬', '🖼️'],
+                'du lịch': ['✈️', '🗺️', '📸', '🏖️', '⛰️'],
+                'travel': ['✈️', '🗺️', '📸', '🏖️', '⛰️'],
+                'xã hội': ['🤝', '🧑‍🤝‍🧑', '🌐', '🗣️', '🫂'],
+                'society': ['🤝', '🧑‍🤝‍🧑', '🌐', '🗣️', '🫂'],
+                'general': ['✨', '🌟', '💡', '🚀', '🌈', '🎉', '💬', '✍️'] // General fallback emojis
+            };
+
+            const lowerTopic = topic.toLowerCase();
+            let emojis = topicEmojis['general'];
+            for (const key in topicEmojis) {
+                if (lowerTopic.includes(key)) {
+                    emojis = topicEmojis[key];
+                    break;
+                }
+            }
+
+            paragraphs.forEach((p, index) => {
+                // Only add icons to paragraphs that have content and are not just empty
+                if (p.textContent.trim().length > 0) {
+                    // Get a random emoji from the selected list
+                    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+                    
+                    // Create a span for the emoji to give it some margin
+                    const emojiSpan = doc.createElement('span');
+                    emojiSpan.textContent = randomEmoji;
+                    emojiSpan.style.marginRight = '0.5rem'; // Add some space after the emoji
+                    emojiSpan.style.verticalAlign = 'middle'; // Align with text baseline
+
+                    // Insert the emoji at the beginning of the paragraph
+                    p.prepend(emojiSpan);
+                }
+            });
+
+            return doc.body.innerHTML;
+        }
 
         function renderGeneratedNewsletter() {
             if (generatedNewsletterHtml) {
@@ -1131,7 +1196,7 @@
 
         // Function to read a newsletter
         function readNewsletter(nlId) {
-            const selectedNewsletter = savedNewsletters.find(nl => nl.id === nlId);
+            const selectedNewsletter = savedNewsletters.find(nl => s.id === nlId);
             if (selectedNewsletter) {
                 activeNewsletterId = nlId; // Set the active newsletter
                 
@@ -1142,7 +1207,7 @@
                 
                 // Display newsletter title and icon
                 newsletterTitleDisplay.innerHTML = `${selectedNewsletter.icon} ${selectedNewsletter.name}`;
-                newsletterTitleDisplay.classList.remove('hidden');
+                newsletterTitleDisplay.classList.remove('hidden'); // Ensure title is visible
 
                 // Hide flashcard sections if they are visible
                 flashcardListContainer.classList.remove('is-visible');
@@ -1233,14 +1298,16 @@
             if (target.classList.contains('highlighted-word')) {
                 const meaning = target.dataset.meaning;
                 const ipa = target.dataset.ipa;
-                const partOfSpeech = target.dataset.partOfSpeech;
+                // Add fallback for partOfSpeech if it's empty or undefined
+                const partOfSpeech = target.dataset.partOfSpeech || '';
                 const wordToSpeak = target.textContent;
 
                 speakWord(wordToSpeak);
 
                 popupMeaning.textContent = meaning;
                 popupIPA.textContent = ipa;
-                popupPartOfSpeech.textContent = `(${partOfSpeech})`;
+                // Only display partOfSpeech if it exists
+                popupPartOfSpeech.textContent = partOfSpeech ? `(${partOfSpeech})` : '';
 
                 wordPopup.classList.remove('hidden');
                 wordPopup.classList.add('is-visible');
@@ -1266,19 +1333,19 @@
 
                 // Calculate vertical position relative to the main content area
                 let popupTop;
+                const padding = 5; // Padding between word and popup
+
                 // Check if there's enough space above the word (relative to viewport)
-                const spaceAboveViewport = targetRect.top - popupHeight - 5;
+                const spaceAboveViewport = targetRect.top - popupHeight - padding;
                 // Check if there's enough space below the word (relative to viewport)
-                const spaceBelowViewport = window.innerHeight - targetRect.bottom - popupHeight - 5;
+                const spaceBelowViewport = window.innerHeight - targetRect.bottom - popupHeight - padding;
 
                 if (spaceAboveViewport >= 0) { // Enough space above in viewport
-                    popupTop = targetRect.top - popupHeight - 5 - mainRect.top;
+                    popupTop = targetRect.top - popupHeight - padding - mainRect.top;
                 } else if (spaceBelowViewport >= 0) { // Enough space below in viewport
-                    popupTop = targetRect.bottom + 5 - mainRect.top;
-                } else { // Not enough space either way, prioritize placing below if it's closer to top
-                    // This is a fallback, if both above and below cause overflow,
-                    // we'll place it below, but still within mainRect if possible.
-                    popupTop = targetRect.bottom + 5 - mainRect.top;
+                    popupTop = targetRect.bottom + padding - mainRect.top;
+                } else { // Not enough space either way, prioritize placing below
+                    popupTop = targetRect.bottom + padding - mainRect.top;
                     // Further adjust if it still goes off the bottom of mainRect
                     if (popupTop + popupHeight > mainRect.height) {
                         popupTop = mainRect.height - popupHeight;
