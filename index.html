@@ -1194,6 +1194,19 @@
                 let newsletterText = data.newsletter_content;
                 const vocabularyWords = data.vocabulary;
 
+                // NEW FIX: Clean newsletterText from any unintended data- attributes or similar LLM artifacts
+                // This regex aims to remove any " data-attribute="value"" pattern, including stray quotes and angle brackets.
+                // It's more aggressive to catch various malformed outputs from the LLM.
+                newsletterText = newsletterText
+                    .replace(/data-[a-zA-Z0-9-]+="[^"]*?"/g, '') // Remove data-attributes with double quotes
+                    .replace(/data-[a-zA-Z0-9-]+='[^']*?'/g, '')  // Remove data-attributes with single quotes
+                    .replace(/data-[a-zA-Z0-9-]+=\S+/g, '')     // Remove data-attributes without quotes (e.g., data-key=value)
+                    .replace(/"\s*>/g, '>')                      // Remove stray " > patterns
+                    .replace(/["']/g, '')                        // Remove any remaining stray single/double quotes
+                    .replace(/[<>]/g, '')                        // Remove any remaining stray angle brackets
+                    .replace(/\s+/g, ' ')                        // Normalize multiple spaces to single space
+                    .trim();                                     // Trim leading/trailing whitespace
+
                 // Process newsletterText for paragraph breaks
                 newsletterText = newsletterText.split('\n\n').map(p => `<p class="mb-4">${p.trim()}</p>`).join('');
 
