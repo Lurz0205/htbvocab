@@ -918,19 +918,26 @@
             saveFlashcardsBtn.classList.add('hidden');
             generateVocabBtn.disabled = true;
 
-            const vocabTopic = vocabTopicInput.value.trim();
+            let vocabTopic = vocabTopicInput.value.trim(); // Use let as it might be modified
             const selectedLevel = document.querySelector('input[name="vocabLevel"]:checked').value; // Get selected level
             
             let targetWordCount;
-            let levelDescription;
+            const defaultB2Count = 15;
+            const defaultC1C2Count = 10;
 
-            if (selectedLevel === 'B2') {
-                targetWordCount = 15;
-                levelDescription = 'trình độ B2';
-            } else { // C1/C2
-                targetWordCount = 10;
-                levelDescription = 'trình độ C1/C2';
+            // Try to extract number from input
+            const match = vocabTopic.match(/(\d+)\s*(từ vựng|từ)?\s*(.*)/i);
+            let cleanedTopic = vocabTopic;
+
+            if (match && parseInt(match[1]) > 0) {
+                targetWordCount = parseInt(match[1]);
+                cleanedTopic = match[3].trim(); // Extract remaining topic
+            } else {
+                // If no number specified, use default based on level
+                targetWordCount = (selectedLevel === 'B2') ? defaultB2Count : defaultC1C2Count;
             }
+
+            let levelDescription = (selectedLevel === 'B2') ? 'trình độ B2' : 'trình độ C1/C2';
 
             let currentGeneratedWordsForSession = []; // Tracks words generated in *this session* (multiple clicks)
             
@@ -963,7 +970,7 @@
                     const exclusionPrompt = wordsToExcludeFromLLM ? `Không được trùng lặp với các từ sau: ${wordsToExcludeFromLLM}. ` : '';
 
                     // Updated prompt to explicitly state partOfSpeech is mandatory and in short form
-                    const prompt = `Tạo một danh sách ${requestCount} từ vựng tiếng Anh ${levelDescription} ${vocabTopic ? `liên quan đến chủ đề "${vocabTopic}"` : 'ngẫu nhiên'}. ${exclusionPrompt}Với mỗi từ, cung cấp nghĩa tiếng Việt, phiên âm IPA, loại từ (bắt buộc, dạng viết tắt như "n.", "v.", "adj."), và một câu ví dụ. **Hãy đảm bảo chữ cái đầu tiên của mỗi từ vựng được viết hoa.** Định dạng JSON như sau:
+                    const prompt = `Tạo một danh sách ${requestCount} từ vựng tiếng Anh ${levelDescription} ${cleanedTopic ? `liên quan đến chủ đề "${cleanedTopic}"` : 'ngẫu nhiên'}. ${exclusionPrompt}Với mỗi từ, cung cấp nghĩa tiếng Việt, phiên âm IPA, loại từ (bắt buộc, dạng viết tắt như "n.", "v.", "adj."), và một câu ví dụ. **Hãy đảm bảo chữ cái đầu tiên của mỗi từ vựng được viết hoa.** Định dạng JSON như sau:
                     [
                       {
                         "word": "Từ vựng",
@@ -1150,7 +1157,13 @@
                 vocabularyWords.sort((a, b) => b.word.length - a.word.length);
 
                 for (const item of vocabularyWords) {
-                    const cleanWord = item.word;
+                    // Sanitize the word and its attributes to prevent HTML injection or malformed data
+                    let cleanWord = String(item.word || '').replace(/<[^>]*>/g, '').trim(); // Remove any HTML tags
+                    cleanWord = cleanWord.replace(/"/g, '&quot;'); // Escape double quotes
+                    cleanWord = cleanWord.replace(/'/g, '&#039;'); // Escape single quotes
+                    // Also remove any data- attributes that might have been accidentally included by AI
+                    cleanWord = cleanWord.split(' data-')[0]; // Take only the part before " data-" if present
+
                     const lowerCaseCleanWord = cleanWord.toLowerCase();
 
                     // Only highlight if this word has NOT already been highlighted in *this specific newsletter generation*.
@@ -1159,9 +1172,12 @@
                     }
 
                     const levelClass = item.level === 'B2' ? 'b2-level' : 'c1-c2-level';
-                    // Added fallback for partOfSpeech in data-attribute
-                    const partOfSpeechAttr = item.partOfSpeech ? item.partOfSpeech : '';
-                    const replacementHtml = `<span class="highlighted-word ${levelClass}" data-meaning="${item.meaning}" data-ipa="${item.ipa}" data-part-of-speech="${partOfSpeechAttr}">${cleanWord}</span>`; 
+                    // Sanitize attributes as well
+                    const partOfSpeechAttr = String(item.partOfSpeech || '').replace(/"/g, '&quot;');
+                    const meaningAttr = String(item.meaning || '').replace(/"/g, '&quot;');
+                    const ipaAttr = String(item.ipa || '').replace(/"/g, '&quot;');
+
+                    const replacementHtml = `<span class="highlighted-word ${levelClass}" data-meaning="${meaningAttr}" data-ipa="${ipaAttr}" data-part-of-speech="${partOfSpeechAttr}">${cleanWord}</span>`; 
 
                     // Find the first occurrence of the word in the current newsletterText
                     // Use a regex with word boundaries to ensure whole word matching
