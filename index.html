@@ -18,6 +18,7 @@
         }
         .flashcard-inner {
             transform-style: preserve-3d;
+            transition: transform 0.7s ease-in-out; /* Keep flip transition */
         }
         .flashcard-face {
             -webkit-backface-visibility: hidden; /* For Safari */
@@ -56,7 +57,7 @@
             100% { transform: scale(1); background-color: transparent; }
         }
 
-        /* Custom Alert Modal Styles */
+        /* Custom Alert Modal Styles - UPDATED for fade-in/zoom-in */
         .custom-alert-overlay {
             position: fixed;
             top: 0;
@@ -85,11 +86,13 @@
             max-width: 400px;
             width: 90%;
             border: 1px solid #4b5563; /* gray-600 */
-            transform: scale(0.9); /* Start slightly smaller */
-            transition: transform 0.3s ease;
+            transform: scale(0.8); /* Start slightly smaller for zoom-in */
+            opacity: 0; /* Start hidden for fade-in */
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out; /* Smooth transition for both */
         }
         .custom-alert-overlay.is-visible .custom-alert-box {
-            transform: scale(1); /* Scale up when visible */
+            transform: scale(1); /* Scale up to normal size */
+            opacity: 1; /* Fade in */
         }
         .custom-alert-box p {
                 color: #d1d5db; /* gray-300 */
@@ -167,7 +170,7 @@
             min-height: 500px; /* Ensure main has enough height for content */
         }
 
-        /* Popup for word meaning - Changed to absolute position */
+        /* Popup for word meaning - UPDATED for fade-in/zoom-in */
         #wordPopup {
             position: absolute; /* Changed from fixed to absolute */
             z-index: 1001; /* Higher than overlay */
@@ -177,15 +180,15 @@
             border-radius: 0.5rem; /* Adjusted border-radius */
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
             border: 1px solid #8B5CF6; /* purple-500 */
-            transition: opacity 0.2s ease, transform 0.2s ease;
-            transform: translateY(-5px); /* Slight initial offset for transition */
-            opacity: 0;
+            transform: scale(0.8); /* Start smaller */
+            opacity: 0; /* Start fully transparent */
             visibility: hidden;
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out; /* Smooth transition for both */
         }
         #wordPopup.is-visible {
             opacity: 1;
             visibility: visible;
-            transform: translateY(0);
+            transform: scale(1); /* Zoom to normal size */
         }
 
         /* Loading Spinner Styles */
@@ -242,7 +245,7 @@
             transform: scale(1.05);
         }
 
-        /* New: Styles for Guide Modal */
+        /* New: Styles for Guide Modal - UPDATED for fade-in/zoom-in */
         .guide-modal-overlay {
             position: fixed;
             top: 0;
@@ -272,8 +275,9 @@
             max-height: 90vh; /* Limit height for scrollability */
             overflow-y: auto; /* Enable scrolling for long content */
             border: 1px solid #4b5563; /* gray-600 */
-            transform: scale(0.9);
-            transition: transform 0.3s ease;
+            transform: scale(0.8); /* Start smaller for zoom-in */
+            opacity: 0; /* Start hidden for fade-in */
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out; /* Smooth transition for both */
             color: #d1d5db; /* gray-300 */
 
             /* Custom Scrollbar Styles */
@@ -296,6 +300,7 @@
 
         .guide-modal-overlay.is-visible .guide-modal-box {
             transform: scale(1);
+            opacity: 1;
         }
         .guide-modal-box h3 {
             font-size: 1.875rem; /* text-3xl */
@@ -337,6 +342,37 @@
         }
         .guide-modal-box button:hover {
             background-color: #7c3aed;
+        }
+
+        /* Flashcard Slide Effects */
+        .flashcard-container {
+            overflow: hidden; /* Hide content outside the container during slide */
+        }
+        #flashcardContentWrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            /* Default transition for zoom-in/out, overridden by specific slide-out transitions */
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+
+        /* Classes for slide-out effect (when moving to next/prev card from front face) */
+        .flashcard-slide-out-left {
+            transform: translateX(-100%) scale(0.8);
+            opacity: 0;
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; /* Specific transition for slide-out */
+        }
+        .flashcard-slide-out-right {
+            transform: translateX(100%) scale(0.8);
+            opacity: 0;
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; /* Specific transition for slide-out */
+        }
+
+        /* Final state for zoom-in (new card fully visible) */
+        .flashcard-zoom-in {
+            transform: scale(1) !important; /* Added scale(1) */
+            opacity: 1 !important;
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out; /* Specific transition for zoom-in */
         }
     </style>
 </head>
@@ -451,7 +487,7 @@
                     </div>
                 </div>
                 <div class="flex flex-col sm:flex-row gap-4 mb-4">
-                    <input type="text" id="vocabTopicInput" placeholder="Nhập chủ đề (ví dụ: 'Khoa học', 'Kinh tế') hoặc để trống để ngẫu nhiên" class="flex-1 p-3 rounded-md bg-gray-900 text-white border border-gray-600 focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50 placeholder-gray-500">
+                    <input type="text" id="vocabTopicInput" placeholder="Nhập chủ đề (ví dụ: '20 từ Khoa học', 'phrasal verb') hoặc để trống để ngẫu nhiên" class="flex-1 p-3 rounded-md bg-gray-900 text-white border border-gray-600 focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50 placeholder-gray-500">
                     <button id="generateVocabBtn" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-lg shadow-md hover:from-blue-600 hover:to-cyan-600 transition duration-300 transform hover:scale-105 btn-gradient-hover">
                         Tạo Từ Vựng
                     </button>
@@ -512,19 +548,21 @@
                     <div id="flashcardDisplay" class="flex flex-col items-center">
                         <!-- Flashcard -->
                         <div id="flashcardContainer" class="flashcard-container w-full max-w-md h-64 perspective-1000 cursor-pointer mb-6">
-                            <div id="flashcardInner" class="flashcard-inner relative w-full h-full text-center rounded-xl shadow-xl transition-transform duration-700 ease-in-out">
-                                <!-- Front Face -->
-                                <div id="flashcardFront" class="flashcard-face flashcard-front absolute w-full h-full bg-gradient-to-br from-purple-700 to-indigo-700 rounded-xl flex items-center justify-center p-4 backface-hidden">
-                                    <p id="flashcardWord" class="text-4xl font-bold text-white"></p>
-                                    <button id="flashcardPronounceBtn" class="pronounce-btn absolute top-2 right-2" title="Nghe phát âm">
-                                        &#128266; <!-- Speaker emoji -->
-                                    </button>
-                                </div>
-                                <!-- Back Face -->
-                                <div id="flashcardBack" class="flashcard-face flashcard-back absolute w-full h-full bg-gradient-to-br from-teal-600 to-green-600 rounded-xl flex flex-col items-center justify-center p-4 rotate-y-180 backface-hidden">
-                                    <p id="flashcardMeaning" class="text-2xl font-bold text-white mb-2"></p>
-                                    <p id="flashcardIPA" class="text-xl italic text-gray-100 mb-2"></p>
-                                    <p id="flashcardExample" class="text-lg text-gray-200 text-center"></p>
+                            <div id="flashcardContentWrapper" class="relative w-full h-full">
+                                <div id="flashcardInner" class="flashcard-inner absolute w-full h-full text-center rounded-xl shadow-xl">
+                                    <!-- Front Face -->
+                                    <div id="flashcardFront" class="flashcard-face flashcard-front absolute w-full h-full bg-gradient-to-br from-purple-700 to-indigo-700 rounded-xl flex items-center justify-center p-4 backface-hidden">
+                                        <p id="flashcardWord" class="text-4xl font-bold text-white"></p>
+                                        <button id="flashcardPronounceBtn" class="pronounce-btn absolute top-2 right-2" title="Nghe phát âm">
+                                            &#128266; <!-- Speaker emoji -->
+                                        </button>
+                                    </div>
+                                    <!-- Back Face -->
+                                    <div id="flashcardBack" class="flashcard-face flashcard-back absolute w-full h-full bg-gradient-to-br from-teal-600 to-green-600 rounded-xl flex flex-col items-center justify-center p-4 rotate-y-180 backface-hidden">
+                                        <p id="flashcardMeaning" class="text-2xl font-bold text-white mb-2"></p>
+                                        <p id="flashcardIPA" class="text-xl italic text-gray-100 mb-2"></p>
+                                        <p id="flashcardExample" class="text-lg text-gray-200 text-center"></p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -630,6 +668,7 @@
         const flashcardLearningArea = document.getElementById('flashcardLearningArea'); // New: Area for active flashcard learning
         const flashcardDisplay = document.getElementById('flashcardDisplay');
         const flashcardContainer = document.getElementById('flashcardContainer');
+        const flashcardContentWrapper = document.getElementById('flashcardContentWrapper'); // New: Wrapper for slide effect
         const flashcardInner = document.getElementById('flashcardInner');
         const flashcardWord = document.getElementById('flashcardWord');
         const flashcardMeaning = document.getElementById('flashcardMeaning');
@@ -672,8 +711,11 @@
         // Show custom alert
         function showCustomAlert(message) {
             customAlertMessage.textContent = message;
-            customAlertOverlay.classList.remove('hidden');
-            customAlertOverlay.classList.add('is-visible');
+            customAlertOverlay.classList.remove('hidden'); // Remove hidden first
+            // Use requestAnimationFrame to ensure the browser has painted the initial state
+            requestAnimationFrame(() => {
+                customAlertOverlay.classList.add('is-visible'); // Then add is-visible to trigger transition
+            });
         }
 
         // Hide custom alert
@@ -687,8 +729,11 @@
 
         // Show guide modal
         function showGuideModal() {
-            guideModalOverlay.classList.remove('hidden');
-            guideModalOverlay.classList.add('is-visible');
+            guideModalOverlay.classList.remove('hidden'); // Remove hidden first
+            // Use requestAnimationFrame to ensure the browser has painted the initial state
+            requestAnimationFrame(() => {
+                guideModalOverlay.classList.add('is-visible'); // Then add is-visible to trigger transition
+            });
         }
 
         // Hide guide modal
@@ -1101,11 +1146,13 @@
                 });
             }).join(', ');
 
-            const exclusionPromptForNewsletter = wordsToExcludeFromNewsletterLLM ? `Hạn chế sử dụng các từ sau: ${wordsToExcludeFromLLM}. ` : '';
+            // FIX: Corrected typo from wordsToExcludeFromLLM to wordsToExcludeFromNewsletterLLM
+            const exclusionPromptForNewsletter = wordsToExcludeFromNewsletterLLM ? `Hạn chế sử dụng các từ sau: ${wordsToExcludeFromNewsletterLLM}. ` : '';
 
-            // --- New: Collect past newsletter ideas for the same topic to encourage diversity ---
-            const pastNewsletterIdeas = savedNewsletters
+            // UPDATED: Limit to the 10 most recent newsletters for diversity prompt to avoid long prompts
+            const recentNewsletterIdeas = savedNewsletters
                 .filter(nl => newsletterTopic && nl.name.toLowerCase().includes(newsletterTopic.toLowerCase()))
+                .slice(-10) // Get the last 10 elements (most recent)
                 .map(nl => {
                     // Extract first paragraph as a brief summary of content
                     const doc = new DOMParser().parseFromString(nl.content, 'text/html');
@@ -1114,8 +1161,8 @@
                 })
                 .join('; ');
 
-            const diversityPrompt = pastNewsletterIdeas ? 
-                `Hãy tạo nội dung mới mẻ, khám phá các khía cạnh khác và tránh trùng lặp ý tưởng chính đã có trong các bản tin trước về chủ đề này, ví dụ: ${pastNewsletterIdeas}.` : 
+            const diversityPrompt = recentNewsletterIdeas ? 
+                `Hãy tạo nội dung mới mẻ, khám phá các khía cạnh khác và tránh trùng lặp ý tưởng chính đã có trong các bản tin trước về chủ đề này, ví dụ: ${recentNewsletterIdeas}.` : 
                 `Hãy tạo nội dung mới mẻ và đa dạng.`;
 
             // Updated prompt to explicitly state partOfSpeech is mandatory and in short form
@@ -1295,16 +1342,26 @@
         function learnFlashcardSet(setId) {
             const set = savedFlashcards.find(s => s.id === setId);
             if (set) {
+                if (set.words.length === 0) {
+                    showCustomAlert('Bộ flashcard này không có từ vựng nào. Vui lòng tạo thêm từ hoặc chọn bộ khác.');
+                    // Ensure the learning area remains hidden or goes back to list if it was already visible
+                    flashcardLearningArea.classList.add('hidden');
+                    flashcardLearningArea.classList.remove('is-visible');
+                    flashcardListContainer.classList.remove('hidden');
+                    flashcardListContainer.classList.add('is-visible');
+                    return; // Stop execution if the set is empty
+                }
                 shuffledFlashcards = [...set.words].sort(() => Math.random() - 0.5);
                 currentFlashcardIndex = 0;
                 isFlipped = false;
                 activeFlashcardSetId = setId; // Set the active set
                 
-                // Ensure flashcardDisplay is visible
+                // These lines should only execute if there are words to display
                 flashcardDisplay.classList.remove('hidden'); 
-                updateFlashcardDisplay();
-                
+                updateFlashcardDisplay(); // Initial display without slide
+
                 // Hide newsletter sections if they are visible
+                // This ensures only one learning area is active at a time
                 newsletterListContainer.classList.remove('is-visible');
                 newsletterListContainer.classList.add('hidden');
                 newsletterReadingArea.classList.remove('is-visible');
@@ -1371,29 +1428,38 @@
             isFlipped = false;
             activeFlashcardSetId = null;
             flashcardDisplay.classList.add('hidden'); // Ensure it's hidden when resetting
+            // Reset wrapper classes and inline styles
+            flashcardContentWrapper.classList.remove('flashcard-slide-out-left', 'flashcard-slide-out-right', 'flashcard-zoom-in');
+            flashcardContentWrapper.style.transform = ''; // Clear any inline transform
+            flashcardContentWrapper.style.opacity = ''; // Clear any inline opacity
+            flashcardContentWrapper.style.transition = ''; // Restore default transition
         }
 
         function updateFlashcardDisplay() {
-            if (shuffledFlashcards.length > 0) {
-                const currentCard = shuffledFlashcards[currentFlashcardIndex];
-                flashcardWord.textContent = currentCard.word;
-                flashcardMeaning.textContent = currentCard.meaning;
-                flashcardIPA.textContent = currentCard.ipa;
-                flashcardExample.textContent = `"${currentCard.example}"`;
-                flashcardCounter.textContent = `Thẻ ${currentFlashcardIndex + 1} / ${shuffledFlashcards.length}`;
-
-                // Set data-word for pronunciation button
-                flashcardPronounceBtn.dataset.word = currentCard.word;
-
-                // Reset flip state, then apply if needed for next/prev
-                flashcardInner.classList.remove('rotate-y-180');
-                isFlipped = false; // Always show front face on new card
-
-                prevFlashcardBtn.disabled = currentFlashcardIndex === 0;
-                nextFlashcardBtn.disabled = false; // Always allow next until the very last card
-            } else {
-                resetFlashcardDisplay();
+            // Add robust check at the beginning
+            if (shuffledFlashcards.length === 0 || currentFlashcardIndex < 0 || currentFlashcardIndex >= shuffledFlashcards.length) {
+                console.error("Attempted to update flashcard display with invalid state. Index:", currentFlashcardIndex, "Array length:", shuffledFlashcards.length);
+                resetFlashcardDisplay(); // Ensure display is reset
+                showCustomAlert('Không tìm thấy thẻ flashcard hợp lệ. Vui lòng chọn bộ khác hoặc tạo bộ mới.');
+                return;
             }
+
+            const currentCard = shuffledFlashcards[currentFlashcardIndex];
+            flashcardWord.textContent = currentCard.word;
+            flashcardMeaning.textContent = currentCard.meaning;
+            flashcardIPA.textContent = currentCard.ipa;
+            flashcardExample.textContent = `"${currentCard.example}"`;
+            flashcardCounter.textContent = `Thẻ ${currentFlashcardIndex + 1} / ${shuffledFlashcards.length}`;
+
+            // Set data-word for pronunciation button
+            flashcardPronounceBtn.dataset.word = currentCard.word;
+
+            // Always reset flip state to front face when updating content
+            flashcardInner.classList.remove('rotate-y-180');
+            isFlipped = false; 
+
+            prevFlashcardBtn.disabled = currentFlashcardIndex === 0;
+            nextFlashcardBtn.disabled = currentFlashcardIndex === shuffledFlashcards.length - 1;
         }
 
         flashcardContainer.addEventListener('click', (event) => {
@@ -1414,36 +1480,109 @@
             speakWord(wordToSpeak);
         });
 
+        // Helper function to handle flashcard transitions
+        function handleFlashcardTransition(direction) {
+            // Disable buttons during transition
+            prevFlashcardBtn.disabled = true;
+            nextFlashcardBtn.disabled = true;
+
+            // Determine the new index BEFORE starting animations
+            let targetIndex = currentFlashcardIndex; // Use targetIndex to calculate, don't update currentFlashcardIndex yet
+            if (direction === 'next') {
+                targetIndex++;
+            } else {
+                targetIndex--;
+            }
+
+            // Check if the new index is valid before proceeding with animation
+            if (targetIndex < 0 || targetIndex >= shuffledFlashcards.length) {
+                // Re-enable buttons if transition is not possible
+                prevFlashcardBtn.disabled = currentFlashcardIndex === 0;
+                nextFlashcardBtn.disabled = currentFlashcardIndex === shuffledFlashcards.length - 1;
+                if (targetIndex < 0) {
+                    showCustomAlert('Bạn đang ở thẻ đầu tiên.');
+                } else { // targetIndex >= shuffledFlashcards.length
+                    showCustomAlert('Bạn đã hoàn thành bộ flashcard này!');
+                }
+                return;
+            }
+
+            // If currently flipped, flip back first
+            if (isFlipped) {
+                flashcardInner.classList.remove('rotate-y-180');
+                isFlipped = false; // Set state to front face
+                // Wait for the flip animation to complete before proceeding with slide/zoom
+                setTimeout(() => {
+                    // Now update the index and perform slide/zoom
+                    currentFlashcardIndex = targetIndex; // Update global index after flip
+                    performSlideAndZoom(direction);
+                }, 700); // Match flashcard-inner transition duration
+            } else {
+                // If not flipped, directly update index and perform slide/zoom
+                currentFlashcardIndex = targetIndex; // Update global index immediately
+                performSlideAndZoom(direction);
+            }
+        }
+
+        function performSlideAndZoom(direction) {
+            // Buttons are already disabled by handleFlashcardTransition
+
+            const slideOutClass = direction === 'next' ? 'flashcard-slide-out-left' : 'flashcard-slide-out-right';
+
+            // 1. Start slide-out animation for current card
+            flashcardContentWrapper.classList.add(slideOutClass);
+            // Ensure any previous zoom-in class is removed to allow slide-out transition
+            flashcardContentWrapper.classList.remove('flashcard-zoom-in');
+
+            // Wait for slide-out animation to complete
+            setTimeout(() => {
+                // 2. Update content for the new card
+                // Index is already updated in handleFlashcardTransition
+                updateFlashcardDisplay(); // This updates the text content and ensures flashcardInner is front-facing
+
+                // --- Crucial step for zoom from center ---
+                // Remove slide-out class
+                flashcardContentWrapper.classList.remove(slideOutClass);
+                
+                // Temporarily disable transitions on the wrapper to instantly reset its position and scale for the new card
+                flashcardContentWrapper.style.transition = 'none';
+                flashcardContentWrapper.style.transform = 'scale(0.8)'; // Set initial scale for zoom, and ensure translateX is 0
+                flashcardContentWrapper.style.opacity = '0'; // Set initial opacity for zoom
+
+                // Force reflow to ensure the new transform/opacity are applied immediately without transition
+                void flashcardContentWrapper.offsetWidth;
+
+                // Re-enable transitions for the zoom-in animation
+                flashcardContentWrapper.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+
+                // 3. Start zoom-in animation
+                requestAnimationFrame(() => {
+                    // Add the class that triggers the transition to scale(1) and opacity(1)
+                    flashcardContentWrapper.classList.add('flashcard-zoom-in');
+                    
+                    // Re-enable buttons after zoom-in animation completes
+                    setTimeout(() => {
+                        prevFlashcardBtn.disabled = currentFlashcardIndex === 0;
+                        nextFlashcardBtn.disabled = currentFlashcardIndex === shuffledFlashcards.length - 1;
+                    }, 300); // Match 'flashcard-zoom-in' transition duration
+                });
+            }, 300); // Match 'flashcard-slide-out' transition duration
+        }
+
 
         nextFlashcardBtn.addEventListener('click', () => {
             if (currentFlashcardIndex < shuffledFlashcards.length - 1) {
-                // Always flip to front before moving to next card, then move
-                flashcardInner.classList.remove('rotate-y-180');
-                isFlipped = false;
-                // Use a slight delay to allow flip animation to start before content updates
-                setTimeout(() => {
-                    currentFlashcardIndex++;
-                    updateFlashcardDisplay();
-                }, 300); // Adjust delay to match CSS transition duration
+                handleFlashcardTransition('next');
             } else {
                 showCustomAlert('Bạn đã hoàn thành bộ flashcard này!');
-                nextFlashcardBtn.disabled = true; // Disable next button at the end
             }
         });
 
         prevFlashcardBtn.addEventListener('click', () => {
             if (currentFlashcardIndex > 0) {
-                // Always flip to front before moving to prev card, then move
-                flashcardInner.classList.remove('rotate-y-180');
-                isFlipped = false;
-                // Use a slight delay to allow flip animation to start before content updates
-                setTimeout(() => {
-                    currentFlashcardIndex--;
-                    updateFlashcardDisplay();
-                }, 300); // Adjust delay to match CSS transition duration
+                handleFlashcardTransition('prev');
             } else {
                 showCustomAlert('Bạn đang ở thẻ đầu tiên.');
-                prevFlashcardBtn.disabled = true; // Disable prev button at the beginning
             }
         });
 
@@ -1560,8 +1699,10 @@
                 // Only display partOfSpeech if it exists
                 popupPartOfSpeech.textContent = partOfSpeech ? `(${partOfSpeech})` : '';
 
-                wordPopup.classList.remove('hidden');
-                wordPopup.classList.add('is-visible');
+                wordPopup.classList.remove('hidden'); // Remove hidden first
+                requestAnimationFrame(() => {
+                    wordPopup.classList.add('is-visible'); // Then add is-visible to trigger transition
+                });
                 
                 // Get dimensions after making it visible
                 const popupWidth = wordPopup.offsetWidth; 
