@@ -62,23 +62,23 @@
             100% { transform: scale(1); }
         }
 
-        /* --- Section Transitions --- */
+        /* --- Section Transitions (Corrected logic) --- */
         .tab-section {
-            display: none;
-            position: absolute;
-            width: 100%;
-            top: 0;
-            left: 0;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+            position: absolute; /* Allows for smooth transitions */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transition: opacity 0.5s ease-out;
+            display: none; /* Hide non-active tabs completely */
         }
         .tab-section.active {
-            display: block;
-            position: static;
+            display: block; /* Show active tab */
             opacity: 1;
-            transform: translateY(0);
             pointer-events: auto;
+            position: static; /* Place active tab in normal flow */
         }
 
         /* --- Flashcard Flip Effect --- */
@@ -509,9 +509,23 @@
         });
         createTabBtn.addEventListener('click', () => switchTab('create'));
         reviewTabBtn.addEventListener('click', () => switchTab('review'));
+        
+        // Cập nhật: Thêm event listener cho phím Enter
+        vocabTopicInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                generateVocabBtn.click();
+            }
+        });
         generateVocabBtn.addEventListener('click', generateVocabulary);
         saveFlashcardsBtn.addEventListener('click', saveOrUpdateFlashcardSet);
         cancelEditBtn.addEventListener('click', resetVocabForm);
+        
+        // Cập nhật: Thêm event listener cho phím Enter
+        documentTopicInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                generateDocumentBtn.click();
+            }
+        });
         generateDocumentBtn.addEventListener('click', generateDocument);
         saveDocumentBtn.addEventListener('click', saveDocument);
         createFlashcardFromDocumentBtn.addEventListener('click', createFlashcardFromDocument);
@@ -563,12 +577,22 @@
         }
 
         function showSection(sectionName) {
-            const sections = [flashcardListContainer, flashcardLearningArea, documentListContainer, documentReadingArea];
+            // Cập nhật: Thêm class 'tab-section' vào các khu vực mới
+            const sections = [createMaterialsSection, flashcardListContainer, flashcardLearningArea, documentListContainer, documentReadingArea];
             sections.forEach(sec => {
                 sec.classList.remove('active');
                 sec.classList.add('hidden');
             });
+            
             const activeSection = document.getElementById(sectionName + (sectionName.includes('List') ? 'Container' : 'Area'));
+            
+            // Xử lý riêng cho section tạo tài liệu
+            if (sectionName === 'create') {
+                createMaterialsSection.classList.remove('hidden');
+                createMaterialsSection.classList.add('active');
+                return;
+            }
+
             if (activeSection) {
                 activeSection.classList.remove('hidden');
                 activeSection.classList.add('active');
@@ -728,31 +752,30 @@
             showCustomAlert("Đã tạo flashcard xong! Bạn có thể xem lại và lưu.");
         }
         
-        function renderGeneratedVocab(vocabList) {
+        function renderGeneratedVocab(vocab) {
             vocabList.innerHTML = ''; // Clear existing list
-            if (vocabList.length === 0) {
+            if (vocab.length === 0) {
                 noVocabMessage.classList.remove('hidden');
-                vocabList.appendChild(noVocabMessage);
                 vocabActionButtons.classList.add('hidden');
                 return;
             } else {
                 noVocabMessage.classList.add('hidden');
             }
 
-            vocabList.forEach((vocab, index) => {
+            vocab.forEach((item, index) => {
                 const li = document.createElement('li');
-                li.className = `flex items-center justify-between bg-gray-900 p-4 rounded-xl border-l-4 ${vocab.level === 'B2' ? 'border-blue-500' : 'border-red-500'}`;
+                li.className = `flex items-center justify-between bg-gray-900 p-4 rounded-xl border-l-4 ${item.level === 'B2' ? 'border-blue-500' : 'border-red-500'}`;
                 li.innerHTML = `
                     <div class="flex-1">
                         <div class="flex items-center">
-                            <span class="text-xl font-bold text-white">${vocab.word}</span>
-                            <button class="pronounce-btn text-purple-400 hover:text-purple-300 ml-3 text-lg transition-colors" data-word="${vocab.word}">
+                            <span class="text-xl font-bold text-white">${item.word}</span>
+                            <button class="pronounce-btn text-purple-400 hover:text-purple-300 ml-3 text-lg transition-colors" data-word="${item.word}">
                                 <i class="fa-solid fa-volume-high"></i>
                             </button>
                         </div>
-                        <p class="text-gray-400 text-sm italic mt-1">${vocab.ipa}</p>
-                        <p class="text-gray-300 mt-2">${vocab.meaning} <span class="level-tag text-xs font-semibold px-2 py-0.5 rounded-full ${vocab.level === 'B2' ? 'b2-level' : 'c1-c2-level'}">${vocab.level}</span></p>
-                        <p class="text-gray-500 text-sm mt-1">Ví dụ: "${vocab.example}"</p>
+                        <p class="text-gray-400 text-sm italic mt-1">${item.ipa}</p>
+                        <p class="text-gray-300 mt-2">${item.meaning} <span class="level-tag text-xs font-semibold px-2 py-0.5 rounded-full ${item.level === 'B2' ? 'b2-level' : 'c1-c2-level'}">${item.level}</span></p>
+                        <p class="text-gray-500 text-sm mt-1">Ví dụ: "${item.example}"</p>
                     </div>
                     <button class="delete-vocab-btn text-red-500 hover:text-red-400 transition-colors p-2 rounded-full" data-index="${index}">
                         <i class="fa-solid fa-xmark"></i>
