@@ -3,641 +3,439 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VocabBoost - Học Từ vựng Tiếng Anh C1/C2</title>
+    <title>VocabBoost - Nâng cấp Từ vựng C1/C2</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts - Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome CDN for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ96aWjM9L+oE8hL+J6o/qQnN7D6b7Xp+VwW5mN/yK95L3tC8R8W1p/2T5f5w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
-        /* Custom styles for Flashcard flip effect */
+        :root {
+            --primary-purple: #8B5CF6;
+            --secondary-teal: #14B8A6;
+            --background-dark: #1F2937;
+            --text-light: #F9FAFB;
+            --card-bg: #374151;
+            --border-color: #4B5563;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
+            background-color: #0E1015;
+            color: var(--text-light);
+            transition: background-color 0.3s ease;
         }
+
+        .container {
+            max-width: 1000px;
+        }
+
+        /* Custom scrollbar for Webkit browsers (Chrome, Safari, Edge) */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #2D3748;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: var(--primary-purple);
+            border-radius: 4px;
+            border: 2px solid #2D3748;
+        }
+
+        /* --- Animations & Effects --- */
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .pulse-once {
+            animation: pulseOnce 0.3s ease-out;
+        }
+        @keyframes pulseOnce {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* --- Section Transitions --- */
+        .tab-section {
+            display: none;
+            position: absolute;
+            width: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
+        .tab-section.active {
+            display: block;
+            position: static;
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        /* --- Flashcard Flip Effect --- */
         .perspective-1000 {
             perspective: 1000px;
         }
         .flashcard-inner {
             transform-style: preserve-3d;
-            transition: transform 0.7s ease-in-out; /* Keep flip transition */
+            transition: transform 0.7s cubic-bezier(0.68, -0.55, 0.27, 1.55);
         }
         .flashcard-face {
-            -webkit-backface-visibility: hidden; /* For Safari */
+            -webkit-backface-visibility: hidden;
             backface-visibility: hidden;
         }
         .rotate-y-180 {
             transform: rotateY(180deg);
         }
-        /* Style for highlighted words in newsletter */
-        .highlighted-word {
-            font-weight: bold;
-            text-decoration: underline;
-            cursor: pointer;
-            position: relative; /* Needed for positioning the pronounce button inside */
-            /* Removed padding-right for speaker icon as it's removed */
-            display: inline-flex; /* To align icon with text baseline */
-            align-items: baseline;
-            transition: transform 0.1s ease-out, background-color 0.1s ease-out; /* For click effect */
-        }
-        /* Specific colors for word levels in newsletter content */
-        .highlighted-word.b2-level {
-            color: #60A5FA; /* blue-400 */
-        }
-        .highlighted-word.c1-c2-level {
-            color: #F87171; /* red-400 */
-        }
 
-        /* Click effect for highlighted words */
-        .highlighted-word.clicked-effect {
-            animation: wordPulse 0.3s ease-out;
-        }
-
-        @keyframes wordPulse {
-            0% { transform: scale(1); background-color: transparent; }
-            50% { transform: scale(1.05); background-color: rgba(255, 255, 255, 0.1); } /* Subtle background flash */
-            100% { transform: scale(1); background-color: transparent; }
-        }
-
-        /* Custom Alert Modal Styles - UPDATED for fade-in/zoom-in */
-        .custom-alert-overlay {
+        /* --- Custom Popups & Modals --- */
+        .custom-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: rgba(0, 0, 0, 0.75);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            opacity: 0; /* Start hidden */
-            visibility: hidden; /* Hide from screen readers */
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease;
         }
-        .custom-alert-overlay.is-visible {
+        .custom-overlay.is-visible {
             opacity: 1;
             visibility: visible;
         }
-        .custom-alert-box {
-            background-color: #1f2937; /* gray-800 */
-            padding: 2rem;
-            border-radius: 0.75rem; /* rounded-xl */
-            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-            border: 1px solid #4b5563; /* gray-600 */
-            transform: scale(0.8); /* Start slightly smaller for zoom-in */
-            opacity: 0; /* Start hidden for fade-in */
-            transition: transform 0.3s ease-out, opacity 0.3s ease-out; /* Smooth transition for both */
-        }
-        .custom-alert-overlay.is-visible .custom-alert-box {
-            transform: scale(1); /* Scale up to normal size */
-            opacity: 1; /* Fade in */
-        }
-        .custom-alert-box p {
-                color: #d1d5db; /* gray-300 */
-                font-size: 1.125rem; /* text-lg */
-                margin-bottom: 1.5rem;
-            }
-        .custom-alert-box button {
-            background-color: #8B5CF6; /* purple-500 */
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-weight: bold;
-            transition: background-color 0.3s ease;
-        }
-        .custom-alert-box button:hover {
-            background-color: #7c3aed; /* purple-600 */
-        }
-        /* Pronunciation button style */
-        .pronounce-btn {
-            background: none;
-            border: none;
-            color: #a78bfa; /* purple-400 */
-            cursor: pointer;
-            font-size: 1.5rem;
-            margin-left: 0.5rem;
-            transition: color 0.2s ease;
-        }
-        .pronounce-btn:hover {
-            color: #c4b5fd; /* purple-300 */
-        }
-
-        /* Gradient Hover Effect for Buttons */
-        .btn-gradient-hover {
-            position: relative;
-            z-index: 1;
-            overflow: hidden;
-        }
-        .btn-gradient-hover::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.0) 50%, rgba(255,255,255,0.1) 100%);
-            transform: translateX(-100%);
-            transition: transform 0.5s ease-out;
-            z-index: -1;
-        }
-        .btn-gradient-hover:hover::before {
-            transform: translateX(0%);
-        }
-
-        /* Section Transition Styles */
-        #flashcardListContainer, #flashcardLearningArea, #newsletterListContainer, #newsletterReadingArea {
-            position: absolute; 
-            width: 100%;
-            left: 0;
-            top: 0;
+        .custom-modal-box {
+            background-color: var(--background-dark);
+            border: 1px solid var(--border-color);
+            padding: 2.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.5);
+            transform: scale(0.8);
             opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-            pointer-events: none; /* Disable interaction when hidden */
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
         }
-        #flashcardListContainer.is-visible, #flashcardLearningArea.is-visible, #newsletterListContainer.is-visible, #newsletterReadingArea.is-visible {
+        .custom-overlay.is-visible .custom-modal-box {
+            transform: scale(1);
             opacity: 1;
-            transform: translateY(0);
-            pointer-events: auto; /* Enable interaction when visible */
-            position: static; /* Revert to normal flow when active */
         }
 
-        /* Adjust main content for absolute positioning during transition */
-        main {
-            position: relative;
-            min-height: 500px; /* Ensure main has enough height for content */
-        }
-
-        /* Popup for word meaning - UPDATED for fade-in/zoom-in */
         #wordPopup {
-            position: absolute; /* Changed from fixed to absolute */
-            z-index: 1001; /* Higher than overlay */
-            padding: 0.75rem 1rem; /* Adjusted padding */
-            background-color: #6d28d9; /* purple-700 */
-            color: white;
-            border-radius: 0.5rem; /* Adjusted border-radius */
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            border: 1px solid #8B5CF6; /* purple-500 */
-            transform: scale(0.8); /* Start smaller */
-            opacity: 0; /* Start fully transparent */
+            position: absolute;
+            z-index: 1001;
+            transform: scale(0.8);
+            opacity: 0;
             visibility: hidden;
-            transition: opacity 0.3s ease-out, transform 0.3s ease-out; /* Smooth transition for both */
+            transition: opacity 0.2s ease, transform 0.2s ease;
         }
         #wordPopup.is-visible {
             opacity: 1;
             visibility: visible;
-            transform: scale(1); /* Zoom to normal size */
+            transform: scale(1);
         }
 
-        /* Loading Spinner Styles */
+        /* --- Word Levels --- */
+        .highlighted-word {
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s ease-out;
+        }
+        .highlighted-word:hover {
+            text-decoration: underline;
+        }
+        .highlighted-word.b2-level { color: #60A5FA; }
+        .highlighted-word.c1-c2-level { color: #F87171; }
+        .level-tag.b2-level { background-color: #60A5FA; color: white; }
+        .level-tag.c1-c2-level { background-color: #F87171; color: white; }
+
+        /* --- Loading Spinner --- */
         .loading-spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid #8B5CF6; /* purple-500 */
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid var(--primary-purple);
             border-radius: 50%;
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             animation: spin 1s linear infinite;
-            display: inline-block;
-            vertical-align: middle;
-            margin-right: 8px;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
 
-        /* New: Styles for flashcard set colors */
-        .flashcard-set.b2-level {
-            border: 1px solid #60A5FA; /* blue-400 */
-        }
-        .flashcard-set.b2-level h4 {
-            color: #60A5FA; /* blue-400 */
-        }
-        .flashcard-set.c1-c2-level {
-            border: 1px solid #F87171; /* red-400 */
-        }
-        .flashcard-set.c1-c2-level h4 {
-            color: #F87171; /* red-400 */
-        }
-
-        /* New: Styles for Guide Button */
-        #guideBtn {
-            position: fixed;
-            bottom: 1.5rem;
-            right: 1.5rem;
-            background-color: #8B5CF6; /* purple-500 */
-            color: white;
-            padding: 0.75rem 1rem;
-            border-radius: 9999px; /* full rounded */
-            font-weight: bold;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            z-index: 999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-        #guideBtn:hover {
-            background-color: #7c3aed; /* purple-600 */
-            transform: scale(1.05);
-        }
-
-        /* New: Styles for Guide Modal - UPDATED for fade-in/zoom-in */
-        .guide-modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.85); /* Darker overlay */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-        .guide-modal-overlay.is-visible {
-            opacity: 1;
-            visibility: visible;
-        }
-        .guide-modal-box {
-            background-color: #1f2937; /* gray-800 */
-            padding: 2.5rem;
-            border-radius: 1rem; /* rounded-xl */
-            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.5);
-            max-width: 700px;
-            width: 95%;
-            max-height: 90vh; /* Limit height for scrollability */
-            overflow-y: auto; /* Enable scrolling for long content */
-            border: 1px solid #4b5563; /* gray-600 */
-            transform: scale(0.8); /* Start smaller for zoom-in */
-            opacity: 0; /* Start hidden for fade-in */
-            transition: transform 0.3s ease-out, opacity 0.3s ease-out; /* Smooth transition for both */
-            color: #d1d5db; /* gray-300 */
-
-            /* Custom Scrollbar Styles */
-            scrollbar-width: thin; /* For Firefox */
-            scrollbar-color: #8B5CF6 #4b5563; /* thumb color track color for Firefox */
-        }
-        /* Custom scrollbar for Webkit browsers (Chrome, Safari, Edge) */
-        .guide-modal-box::-webkit-scrollbar {
-            width: 10px;
-        }
-        .guide-modal-box::-webkit-scrollbar-track {
-            background: #4b5563; /* gray-600 */
-            border-radius: 5px;
-        }
-        .guide-modal-box::-webkit-scrollbar-thumb {
-            background-color: #8B5CF6; /* purple-500 */
-            border-radius: 5px;
-            border: 2px solid #4b5563; /* padding around thumb */
-        }
-
-        .guide-modal-overlay.is-visible .guide-modal-box {
-            transform: scale(1);
-            opacity: 1;
-        }
-        .guide-modal-box h3 {
-            font-size: 1.875rem; /* text-3xl */
-            font-weight: bold;
-            color: #a78bfa; /* purple-400 */
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-        .guide-modal-box h4 {
-            font-size: 1.25rem; /* text-xl */
-            font-weight: bold;
-            color: #c4b5fd; /* purple-300 */
-            margin-top: 1.5rem;
-            margin-bottom: 0.75rem;
-        }
-        .guide-modal-box p, .guide-modal-box ul {
-            font-size: 1rem; /* text-base */
-            line-height: 1.6;
-            margin-bottom: 1rem;
-        }
-        .guide-modal-box ul {
-            list-style-type: disc;
-            margin-left: 1.5rem;
-        }
-        .guide-modal-box li {
-            margin-bottom: 0.5rem;
-        }
-        .guide-modal-box button {
-            margin-top: 2rem;
-            background-color: #8B5CF6;
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-weight: bold;
-            transition: background-color 0.3s ease;
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .guide-modal-box button:hover {
-            background-color: #7c3aed;
-        }
-
-        /* Flashcard Slide Effects */
-        .flashcard-container {
-            overflow: hidden; /* Hide content outside the container during slide */
-        }
-        #flashcardContentWrapper {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            /* Default transition for zoom-in/out, overridden by specific slide-out transitions */
-            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
-        }
-
-        /* Classes for slide-out effect (when moving to next/prev card from front face) */
-        .flashcard-slide-out-left {
-            transform: translateX(-100%) scale(0.8);
-            opacity: 0;
-            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; /* Specific transition for slide-out */
-        }
-        .flashcard-slide-out-right {
-            transform: translateX(100%) scale(0.8);
-            opacity: 0;
-            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; /* Specific transition for slide-out */
-        }
-
-        /* Final state for zoom-in (new card fully visible) */
-        .flashcard-zoom-in {
-            transform: scale(1) !important; /* Added scale(1) */
-            opacity: 1 !important;
-            transition: transform 0.3s ease-out, opacity 0.3s ease-out; /* Specific transition for zoom-in */
-        }
     </style>
 </head>
-<body class="min-h-screen bg-gray-900 text-white p-4 sm:p-6 lg:p-8">
+<body class="min-h-screen p-4 sm:p-8">
 
     <!-- Custom Alert Modal -->
-    <div id="customAlertOverlay" class="custom-alert-overlay hidden">
-        <div class="custom-alert-box">
-            <p id="customAlertMessage"></p>
-            <button id="customAlertCloseBtn" class="btn-gradient-hover">Đóng</button>
+    <div id="customAlertOverlay" class="custom-overlay hidden">
+        <div class="custom-modal-box max-w-sm text-center">
+            <p id="customAlertMessage" class="text-lg text-gray-300 mb-6"></p>
+            <button id="customAlertCloseBtn" class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-full transition-colors">Đóng</button>
         </div>
     </div>
 
-    <!-- Guide Modal -->
-    <div id="guideModalOverlay" class="guide-modal-overlay hidden">
-        <div class="guide-modal-box">
-            <h3>Hướng dẫn sử dụng VocabBoost</h3>
-            <p>Chào mừng bạn đến với VocabBoost! Ứng dụng này được thiết kế để giúp bạn nâng cao từ vựng tiếng Anh trình độ B2, C1 và C2 một cách hiệu quả thông qua việc tạo flashcard và bản tin cá nhân hóa.</p>
+    <!-- Main Application Container -->
+    <div class="container mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 drop-shadow-lg">
+                VocabBoost
+            </h1>
+            <p class="text-lg text-gray-400 mt-2">Nâng cấp từ vựng tiếng Anh trình độ C1/C2 của bạn!</p>
+        </header>
 
-            <h4>1. Tạo Tài Liệu Học</h4>
-            <ul>
-                <li><strong>Tạo Bộ từ vựng & Flashcard:</strong>
-                    <ul>
-                        <li>Chọn cấp độ từ vựng mong muốn: B2 hoặc C1/C2.</li>
-                        <li>Nhập một yêu cầu cụ thể hoặc để trống để tạo ngẫu nhiên. Yêu cầu có thể bao gồm:
-                            <ul>
-                                <li>Chủ đề từ vựng (ví dụ: "Giáo dục", "Văn hóa", v.v.)</li>
-                                <li>Số lượng từ vựng (tùy chọn, mặc định là 15 từ cho B2 và 10 từ cho C1/C2).</li>
-                                <li>Loại từ vựng (ví dụ: "PHRASAL VERB", "IDIOM", v.v., có thể kèm theo chủ đề).</li>
-                            </ul>
-                        </li>
-                        <li>Nhấn "Tạo Từ Vựng". Ứng dụng sẽ hiển thị danh sách các từ với nghĩa tiếng Việt, phiên âm IPA, loại từ và câu ví dụ.</li>
-                        <li>Bạn có thể xóa các từ không mong muốn khỏi danh sách.</li>
-                        <li>Nhấn "Lưu thành Bộ Flashcard" để lưu bộ từ vựng này vào mục "Ôn Tập & Học Tập".</li>
-                    </ul>
-                </li>
-                <li><strong>Tạo Bản tin Từ vựng:</strong>
-                    <ul>
-                        <li>Nhập một chủ đề cụ thể (ví dụ: "Khoa học", "Kinh tế") hoặc để trống để tạo bản tin ngẫu nhiên.</li>
-                        <li>Nhấn "Tạo Bản Tin". Ứng dụng sẽ tạo một bản tin ngắn bằng tiếng Anh.</li>
-                        <li>Các từ vựng quan trọng (cấp độ B2, C1/C2) trong bản tin sẽ được gạch chân và làm nổi bật.</li>
-                        <li>Nhấp vào từ được highlight để xem nghĩa, phiên âm và nghe phát âm.</li>
-                        <li>Nhấn "Lưu Bản tin" để lưu bản tin này vào mục "Ôn Tập & Học Tập".</li>
-                    </ul>
-                </li>
-            </ul>
+        <!-- Navigation Tabs -->
+        <nav class="mb-10">
+            <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
+                <button id="createTab" class="px-8 py-3 rounded-full text-lg font-semibold transition-all duration-300 transform scale-105 bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg">
+                    Tạo Tài liệu học
+                </button>
+                <button id="reviewTab" class="px-8 py-3 rounded-full text-lg font-semibold transition-all duration-300 bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white">
+                    Ôn Tập & Học
+                </button>
+            </div>
+        </nav>
 
-            <h4>2. Ôn Tập & Học Tập</h4>
-            <ul>
-                <li><strong>Học qua Flashcard:</strong>
-                    <ul>
-                        <li>Chọn một bộ flashcard đã lưu từ danh sách.</li>
-                        <li>Các thẻ flashcard sẽ hiện ra. Nhấp vào thẻ để lật xem nghĩa và ví dụ.</li>
-                        <li>Nhấn biểu tượng loa để nghe phát âm.</li>
-                        <li>Sử dụng nút "Trước" và "Tiếp theo" để điều hướng giữa các thẻ.</li>
-                    </ul>
-                </li>
-                <li><strong>Học qua Bản tin:</strong>
-                    <ul>
-                        <li>Chọn một bản tin đã lưu từ danh sách.</li>
-                        <li>Đọc bản tin và nhấp vào các từ được highlight để xem nghĩa và nghe phát âm.</li>
-                    </ul>
-                </li>
-            </ul>
-            <p>Chúc bạn học tập hiệu quả với VocabBoost!</p>
-            <button id="guideModalCloseBtn" class="btn-gradient-hover">Đóng</button>
-        </div>
-    </div>
+        <!-- Main Content Area -->
+        <main class="relative bg-gray-800 p-6 sm:p-10 rounded-3xl shadow-2xl overflow-hidden min-h-[600px]">
 
+            <!-- Create Materials Section -->
+            <section id="create-materials" class="tab-section active">
+                <h2 class="text-3xl font-bold text-center text-purple-300 mb-8">Tạo Tài liệu học</h2>
 
-    <!-- Header -->
-    <header class="text-center mb-10">
-        <h1 class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 drop-shadow-lg">
-            VocabBoost
-        </h1>
-        <p class="text-lg text-gray-400 mt-2">Nâng tầm từ vựng tiếng Anh C1/C2 của bạn!</p>
-    </header>
-
-    <!-- Navigation Tabs -->
-    <nav class="mb-8">
-        <div class="flex justify-center space-x-4">
-            <button id="createTab" class="px-6 py-3 rounded-full text-lg font-semibold transition duration-300 ease-in-out bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg transform scale-105">
-                Tạo Tài Liệu Học
-            </button>
-            <button id="reviewTab" class="px-6 py-3 rounded-full text-lg font-semibold transition duration-300 ease-in-out bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white">
-                Ôn Tập & Học Tập
-            </button>
-        </div>
-    </nav>
-
-    <!-- Main Content Area -->
-    <main class="max-w-4xl mx-auto bg-gray-800 p-6 rounded-xl shadow-2xl">
-
-        <!-- Create Materials Section -->
-        <section id="create-materials" class="tab-content">
-            <h2 class="text-3xl font-bold text-center text-purple-300 mb-8">Tạo Tài Liệu Học</h2>
-
-            <!-- Create Vocabulary & Flashcard Section -->
-            <div class="mb-10 p-6 bg-gray-700 rounded-lg shadow-lg">
-                <h3 class="text-2xl font-semibold text-white mb-4 border-b border-gray-600 pb-3">1. Tạo Bộ từ vựng & Flashcard</h3>
-                <div class="flex items-center space-x-4 mb-4">
-                    <label class="text-white font-medium">Chọn cấp độ:</label>
-                    <div class="flex items-center space-x-4">
-                        <label class="inline-flex items-center">
-                            <input type="radio" name="vocabLevel" value="B2" class="form-radio text-purple-500 h-4 w-4" checked>
-                            <span class="ml-2 text-white">B2</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="radio" name="vocabLevel" value="C1/C2" class="form-radio text-purple-500 h-4 w-4">
-                            <span class="ml-2 text-white">C1/C2</span>
-                        </label>
+                <!-- 1. Tạo Bộ từ vựng & Flashcard -->
+                <div class="mb-10 p-6 sm:p-8 bg-gray-700 rounded-2xl shadow-lg fade-in">
+                    <h3 class="text-2xl font-semibold text-white mb-6 border-b border-gray-600 pb-4">
+                        <i class="fa-solid fa-list-ol text-purple-400 mr-3"></i> Tạo Bộ từ vựng & Flashcard
+                    </h3>
+                    <div class="flex flex-col sm:flex-row items-center gap-4 mb-4">
+                        <label class="text-white font-medium flex-shrink-0">Cấp độ:</label>
+                        <div class="flex items-center space-x-4">
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="radio" name="vocabLevel" value="B2" class="form-radio text-purple-500 h-4 w-4" checked>
+                                <span class="ml-2 text-white">B2</span>
+                            </label>
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="radio" name="vocabLevel" value="C1/C2" class="form-radio text-purple-500 h-4 w-4">
+                                <span class="ml-2 text-white">C1/C2</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                        <input type="text" id="vocabTopicInput" placeholder="VD: '20 từ Khoa học' hoặc để trống để ngẫu nhiên" class="flex-1 p-3 rounded-xl bg-gray-900 text-white border border-gray-600 focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50 placeholder-gray-500">
+                        <button id="generateVocabBtn" class="px-6 py-3 bg-gradient-to-r from-teal-500 to-emerald-600 text-white font-bold rounded-xl shadow-md hover:from-teal-600 hover:to-emerald-700 transition-all duration-300">
+                            Tạo Từ Vựng
+                        </button>
+                    </div>
+                    <div id="generatedVocabOutput" class="mt-6 p-4 sm:p-6 bg-gray-900 rounded-xl shadow-inner min-h-[200px]">
+                        <p id="vocabLoading" class="text-purple-400 hidden flex items-center justify-center text-lg space-x-2">
+                            <span class="loading-spinner"></span> <span>Đang tạo từ vựng...</span>
+                        </p>
+                        <p id="vocabError" class="text-red-500 hidden text-center"></p>
+                        <ul id="vocabList" class="space-y-4"></ul>
+                        <p id="noVocabMessage" class="text-gray-400 text-center py-10">Chưa có từ vựng nào được tạo.</p>
+                        <div id="vocabActionButtons" class="mt-6 flex flex-col sm:flex-row gap-4 hidden">
+                            <button id="cancelEditBtn" class="flex-1 py-3 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded-xl shadow-lg transition-all duration-300">
+                                Hủy bỏ
+                            </button>
+                            <button id="saveFlashcardsBtn" class="flex-1 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl shadow-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300">
+                                Lưu thành Bộ Flashcard
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div class="flex flex-col sm:flex-row gap-4 mb-4">
-                    <input type="text" id="vocabTopicInput" placeholder="Nhập chủ đề (ví dụ: '20 từ Khoa học', 'phrasal verb') hoặc để trống để ngẫu nhiên" class="flex-1 p-3 rounded-md bg-gray-900 text-white border border-gray-600 focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50 placeholder-gray-500">
-                    <button id="generateVocabBtn" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-lg shadow-md hover:from-blue-600 hover:to-cyan-600 transition duration-300 transform hover:scale-105 btn-gradient-hover">
-                        Tạo Từ Vựng
-                    </button>
-                </div>
-                <div id="generatedVocabOutput" class="mt-6 p-4 bg-gray-800 rounded-lg shadow-inner">
-                    <h3 class="text-xl font-semibold text-white mb-4">Danh sách từ vựng đã tạo:</h3>
-                    <p id="vocabLoading" class="text-purple-400 hidden flex items-center justify-center">
-                        <span class="loading-spinner"></span> Đang tạo từ vựng...
-                    </p>
-                    <p id="vocabError" class="text-red-500 hidden"></p>
-                    <ul id="vocabList" class="space-y-3"></ul>
-                    <p id="noVocabMessage" class="text-gray-400">Chưa có từ vựng nào được tạo. Nhập chủ đề và nhấn "Tạo"!</p>
-                    <button id="saveFlashcardsBtn" class="mt-6 w-full py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white font-bold rounded-lg shadow-lg hover:from-green-600 hover:to-teal-600 transition duration-300 transform hover:scale-105 btn-gradient-hover hidden">
-                        Lưu thành Bộ Flashcard
-                    </button>
-                </div>
-            </div>
 
-            <!-- Create Vocabulary Newsletter Section -->
-            <div class="p-6 bg-gray-700 rounded-lg shadow-lg">
-                <h3 class="text-2xl font-semibold text-white mb-4 border-b border-gray-600 pb-3">2. Tạo Bản tin Từ vựng</h3>
-                <div class="flex flex-col sm:flex-row gap-4 mb-4">
-                    <input type="text" id="newsletterTopicInput" placeholder="Nhập chủ đề (ví dụ: 'Công nghệ', 'Môi trường') hoặc để trống để ngẫu nhiên" class="flex-1 p-3 rounded-md bg-gray-900 text-white border border-gray-600 focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50 placeholder-gray-500">
-                    <button id="generateNewsletterBtn" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-lg shadow-md hover:from-blue-600 hover:to-cyan-600 transition duration-300 transform hover:scale-105 btn-gradient-hover">
-                        Tạo Bản Tin
-                    </button>
-                </div>
-                <div id="generatedNewsletterOutput" class="mt-6 p-4 bg-gray-800 rounded-lg shadow-inner">
-                    <h3 class="text-xl font-semibold text-white mb-4">Bản tin đã tạo:</h3>
-                    <p id="newsletterLoading" class="text-purple-400 hidden flex items-center justify-center">
-                        <span class="loading-spinner"></span> Đang tạo bản tin...
-                    </p>
-                    <p id="newsletterError" class="text-red-500 hidden"></p>
-                    <div id="newsletterContent" class="text-gray-300 leading-relaxed text-base bg-gray-700 p-4 rounded-md shadow-sm hidden"></div> <!-- Added 'hidden' class here -->
-                    <p id="noNewsletterMessage" class="text-gray-400">Chưa có bản tin nào được tạo. Nhập chủ đề và nhấn "Tạo"!</p>
-                    <button id="saveNewsletterBtn" class="mt-6 w-full py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white font-bold rounded-lg shadow-lg hover:from-green-600 hover:to-teal-600 transition duration-300 transform hover:scale-105 btn-gradient-hover hidden">
-                        Lưu Bản tin
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <!-- Review & Learn Section -->
-        <section id="review-learn" class="tab-content">
-            <h2 class="text-3xl font-bold text-center text-purple-300 mb-8">Ôn Tập & Học Tập</h2>
-
-            <!-- Learn via Flashcards Section -->
-            <div class="mb-10 p-6 bg-gray-700 rounded-lg shadow-lg">
-                <h3 class="text-2xl font-semibold text-white mb-4 border-b border-gray-600 pb-3">1. Học qua Flashcard</h3>
-                <div id="flashcardListContainer" class="is-visible"> <!-- Container for flashcard grid -->
-                    <div id="savedFlashcardGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                        <!-- Flashcard sets will be rendered here -->
+                <!-- 2. Tạo Tài liệu từ vựng chuyên sâu -->
+                <div class="p-6 sm:p-8 bg-gray-700 rounded-2xl shadow-lg fade-in">
+                    <h3 class="text-2xl font-semibold text-white mb-6 border-b border-gray-600 pb-4">
+                        <i class="fa-solid fa-file-lines text-purple-400 mr-3"></i> Tạo Tài liệu từ vựng chuyên sâu
+                    </h3>
+                    <div class="flex flex-col sm:flex-row items-center gap-4 mb-4">
+                        <label class="text-white font-medium flex-shrink-0">Loại văn bản:</label>
+                        <select id="documentTypeSelect" class="flex-1 p-3 rounded-xl bg-gray-900 text-white border border-gray-600 focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50">
+                            <option value="bài tin tức ngắn">Tin tức</option>
+                            <option value="đoạn trích từ một bài báo khoa học">Bài báo khoa học</option>
+                            <option value="một bài blog về công nghệ">Bài blog</option>
+                            <option value="một bài luận học thuật ngắn">Bài luận học thuật</option>
+                        </select>
                     </div>
-                    <p id="noSavedFlashcardsMessage" class="text-gray-400 text-center">Chưa có bộ flashcard nào được lưu. Hãy tạo một bộ ở tab "Tạo Tài Liệu Học"!</p>
+                    <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                        <input type="text" id="documentTopicInput" placeholder="Nhập chủ đề (VD: 'AI trong y học') hoặc để trống" class="flex-1 p-3 rounded-xl bg-gray-900 text-white border border-gray-600 focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50 placeholder-gray-500">
+                        <button id="generateDocumentBtn" class="px-6 py-3 bg-gradient-to-r from-orange-400 to-red-500 text-white font-bold rounded-xl shadow-md hover:from-orange-500 hover:to-red-600 transition-all duration-300">
+                            Tạo Tài liệu
+                        </button>
+                    </div>
+                    <div id="generatedDocumentOutput" class="mt-6 p-4 sm:p-6 bg-gray-900 rounded-xl shadow-inner min-h-[200px]">
+                        <p id="documentLoading" class="text-purple-400 hidden flex items-center justify-center text-lg space-x-2">
+                            <span class="loading-spinner"></span> <span>Đang tạo tài liệu...</span>
+                        </p>
+                        <p id="documentError" class="text-red-500 hidden text-center"></p>
+                        <div id="documentContent" class="text-gray-300 leading-relaxed text-base">
+                            <p id="noDocumentMessage" class="text-gray-400 text-center py-10">Chưa có tài liệu nào được tạo.</p>
+                        </div>
+                        <button id="saveDocumentBtn" class="mt-6 w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl shadow-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 hidden">
+                            Lưu Tài liệu
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Review & Learn Section -->
+            <section id="review-learn" class="tab-section">
+                <h2 class="text-3xl font-bold text-center text-purple-300 mb-8">Ôn Tập & Học</h2>
+
+                <!-- Flashcard List -->
+                <div id="flashcardListContainer" class="fade-in">
+                    <h3 class="text-2xl font-semibold text-white mb-6 border-b border-gray-600 pb-4">Bộ Flashcard của bạn</h3>
+                    <div id="flashcardSets" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Flashcard sets will be dynamically inserted here -->
+                        <p id="noFlashcardSetsMessage" class="col-span-full text-gray-400 text-center py-10">Bạn chưa có bộ flashcard nào được lưu.</p>
+                    </div>
                 </div>
 
-                <div id="flashcardLearningArea" class="hidden"> <!-- New: Area for active flashcard learning -->
-                    <div id="flashcardDisplay" class="flex flex-col items-center">
-                        <!-- Flashcard -->
-                        <div id="flashcardContainer" class="flashcard-container w-full max-w-md h-64 perspective-1000 cursor-pointer mb-6">
-                            <div id="flashcardContentWrapper" class="relative w-full h-full">
-                                <div id="flashcardInner" class="flashcard-inner absolute w-full h-full text-center rounded-xl shadow-xl">
-                                    <!-- Front Face -->
-                                    <div id="flashcardFront" class="flashcard-face flashcard-front absolute w-full h-full bg-gradient-to-br from-purple-700 to-indigo-700 rounded-xl flex items-center justify-center p-4 backface-hidden">
-                                        <p id="flashcardWord" class="text-4xl font-bold text-white"></p>
-                                        <button id="flashcardPronounceBtn" class="pronounce-btn absolute top-2 right-2" title="Nghe phát âm">
-                                            &#128266; <!-- Speaker emoji -->
-                                        </button>
-                                    </div>
-                                    <!-- Back Face -->
-                                    <div id="flashcardBack" class="flashcard-face flashcard-back absolute w-full h-full bg-gradient-to-br from-teal-600 to-green-600 rounded-xl flex flex-col items-center justify-center p-4 rotate-y-180 backface-hidden">
-                                        <p id="flashcardMeaning" class="text-2xl font-bold text-white mb-2"></p>
-                                        <p id="flashcardIPA" class="text-xl italic text-gray-100 mb-2"></p>
-                                        <p id="flashcardExample" class="text-lg text-gray-200 text-center"></p>
-                                    </div>
+                <!-- Flashcard Learning Area -->
+                <div id="flashcardLearningArea" class="tab-section">
+                    <button id="backToFlashcardListBtn" class="text-purple-400 hover:text-purple-300 transition-colors mb-6 text-lg font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i> Trở về
+                    </button>
+                    <div class="text-center mb-6">
+                        <h3 id="currentFlashcardSetTitle" class="text-3xl font-bold text-purple-300"></h3>
+                        <p id="flashcardCounter" class="text-gray-400 mt-2 text-lg"></p>
+                    </div>
+                    <div class="perspective-1000 w-full max-w-xl mx-auto h-96">
+                        <div id="flashcardContentWrapper" class="flashcard-container relative h-full">
+                            <div id="flashcardInner" class="flashcard-inner relative w-full h-full rounded-2xl shadow-xl bg-gray-700 cursor-pointer">
+                                <!-- Flashcard Front -->
+                                <div id="flashcardFront" class="flashcard-face absolute w-full h-full p-8 rounded-2xl flex flex-col justify-center items-center text-center">
+                                    <p class="text-gray-400 text-sm mb-2">Từ vựng</p>
+                                    <h4 id="flashcardWord" class="text-5xl font-extrabold text-white mb-4"></h4>
+                                    <p id="flashcardIpa" class="text-gray-400 text-2xl"></p>
+                                </div>
+                                <!-- Flashcard Back -->
+                                <div id="flashcardBack" class="flashcard-face absolute w-full h-full p-8 rounded-2xl flex flex-col justify-start items-start rotate-y-180">
+                                    <button id="backPronounceBtn" class="self-end text-purple-400 hover:text-purple-300 text-3xl transition-colors" style="position: absolute; top: 1.5rem; right: 1.5rem;"><i class="fa-solid fa-volume-high"></i></button>
+                                    <p class="text-gray-400 text-sm">Từ vựng</p>
+                                    <h4 id="backFlashcardWord" class="text-3xl font-bold text-white mb-2"></h4>
+                                    <p id="backFlashcardLevel" class="level-tag text-xs font-semibold px-2 py-0.5 rounded-full mb-4"></p>
+                                    <p class="text-gray-400 text-sm">Phiên âm</p>
+                                    <p id="backFlashcardIpa" class="text-white text-xl mb-4"></p>
+                                    <p class="text-gray-400 text-sm">Nghĩa</p>
+                                    <p id="backFlashcardMeaning" class="text-white text-lg mb-4"></p>
+                                    <p class="text-gray-400 text-sm">Ví dụ</p>
+                                    <p id="backFlashcardExample" class="text-white italic text-base"></p>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Flashcard Navigation Buttons -->
-                        <div class="flex space-x-4">
-                            <button id="prevFlashcardBtn" class="px-6 py-3 bg-gray-600 text-white font-bold rounded-full shadow-md hover:bg-gray-500 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed btn-gradient-hover">
-                                Trước
-                            </button>
-                            <button id="nextFlashcardBtn" class="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-full shadow-md hover:from-purple-600 hover:to-pink-600 transition duration-300 btn-gradient-hover">
-                                Tiếp theo
-                            </button>
-                        </div>
-                        <p id="flashcardCounter" class="mt-4 text-gray-400"></p>
                     </div>
-                    <button id="backToFlashcardListBtn" class="mt-6 w-full py-3 bg-gray-600 text-white font-bold rounded-lg shadow-lg hover:bg-gray-500 transition duration-300 transform hover:scale-105 btn-gradient-hover">
-                        Quay về danh sách Flashcard
+                    <div class="flex justify-center items-center gap-6 mt-8">
+                        <button id="prevCardBtn" class="px-6 py-3 rounded-full bg-gray-700 text-white font-bold shadow-lg transition-all duration-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-arrow-left"></i> Trước
+                        </button>
+                        <button id="nextCardBtn" class="px-6 py-3 rounded-full bg-gray-700 text-white font-bold shadow-lg transition-all duration-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Tiếp theo <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Document List -->
+                <div id="documentListContainer" class="tab-section hidden">
+                    <h3 class="text-2xl font-semibold text-white mb-6 border-b border-gray-600 pb-4">Tài liệu của bạn</h3>
+                    <div id="documentSets" class="space-y-4">
+                        <!-- Document items will be dynamically inserted here -->
+                        <p id="noDocumentSetsMessage" class="text-gray-400 text-center py-10">Bạn chưa có tài liệu nào được lưu.</p>
+                    </div>
+                </div>
+
+                <!-- Document Reading Area -->
+                <div id="documentReadingArea" class="tab-section">
+                    <button id="backToDocumentListBtn" class="text-purple-400 hover:text-purple-300 transition-colors mb-6 text-lg font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i> Trở về
+                    </button>
+                    <div class="text-center mb-6">
+                        <h3 id="currentDocumentTitle" class="text-3xl font-bold text-purple-300"></h3>
+                    </div>
+                    <div id="readingDocumentContent" class="bg-gray-700 p-6 sm:p-8 rounded-2xl shadow-inner leading-relaxed text-lg text-gray-300">
+                        <!-- Document content will be inserted here -->
+                    </div>
+                    <button id="createFlashcardFromDocumentBtn" class="mt-6 w-full py-3 bg-gradient-to-r from-teal-500 to-emerald-600 text-white font-bold rounded-xl shadow-lg hover:from-teal-600 hover:to-emerald-700 transition-all duration-300">
+                        <i class="fa-solid fa-plus mr-2"></i> Tạo Flashcard từ Tài liệu
                     </button>
                 </div>
-            </div>
+            </section>
+        </main>
 
-            <!-- Learn via Newsletter Section -->
-            <div class="p-6 bg-gray-700 rounded-lg shadow-lg">
-                <h3 class="text-2xl font-semibold text-white mb-4 border-b border-gray-600 pb-3">2. Học qua Bản tin</h3>
-                <div id="newsletterListContainer" class="is-visible"> <!-- Container for newsletter grid -->
-                    <div id="savedNewsletterGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                        <!-- Newsletters will be rendered here -->
-                    </div>
-                    <p id="noSavedNewslettersMessage" class="text-gray-400 text-center">Chưa có bản tin nào được lưu. Hãy tạo một bản tin ở tab "Tạo Tài Liệu Học"!</p>
-                </div>
+        <!-- Guide Button -->
+        <button id="guideBtn" class="fixed bottom-6 right-6 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center gap-2">
+            <i class="fa-solid fa-circle-question"></i> Hướng dẫn
+        </button>
+    </div>
 
-                <div id="newsletterReadingArea" class="hidden"> <!-- New: Area for active newsletter reading -->
-                    <h4 id="newsletterTitleDisplay" class="text-2xl font-bold text-purple-300 mb-4 flex items-center"></h4>
-                    <div id="selectedNewsletterContent" class="text-gray-300 leading-relaxed text-base bg-gray-800 p-4 rounded-md shadow-inner"></div>
-                    <p id="noSelectedNewsletterContentMessage" class="text-gray-400 text-center hidden">Vui lòng chọn một bản tin để đọc và học.</p>
-                    <button id="backToNewsletterListBtn" class="mt-6 w-full py-3 bg-gray-600 text-white font-bold rounded-lg shadow-lg hover:bg-gray-500 transition duration-300 transform hover:scale-105 btn-gradient-hover">
-                        Quay về danh sách Bản tin
-                    </button>
-                </div>
-                <!-- Pop-up for word meaning -->
-                <div id="wordPopup" class="word-popup p-3 bg-purple-700 text-white rounded-lg shadow-xl border border-purple-500 hidden">
-                    <p id="popupMeaning" class="font-bold"></p>
-                    <p id="popupPartOfSpeech" class="text-sm italic"></p> <!-- New: for part of speech -->
-                    <p id="popupIPA" class="text-sm italic"></p>
-                </div>
-            </div>
-        </section>
-    </main>
+    <!-- Word Meaning Popup -->
+    <div id="wordPopup" class="absolute bg-gray-900 p-4 rounded-xl shadow-2xl border border-gray-600 max-w-sm hidden">
+        <div id="popupContent" class="space-y-2">
+            <!-- Content will be dynamically inserted here -->
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.1/firebase-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.1/firebase-auth.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.1/firebase-firestore.js"></script>
+    
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, doc, setDoc, onSnapshot, getDoc, query, where, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    <!-- Guide Button -->
-    <button id="guideBtn" class="btn-gradient-hover">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
-            <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm8.706-1.442c1.146-.573 2.437-.92 3.733-.92 1.608 0 2.878.832 2.878 2.015 0 1.123-.791 1.803-1.936 2.09-1.077.27-2.195.559-3.21.849-.215.06-.47.113-.736.163v.75c0 .414.336.75.75.75h.75a.75.75 0 0 0 .75-.75v-.088c.702-.152 1.4-.352 2.063-.59.57-.201 1.272-.427 1.272-1.097 0-.726-.585-1.198-1.521-1.427-1.061-.257-2.135-.52-3.146-.777-.215-.054-.47-.101-.737-.15a.75.75 0 0 0-.736.312l-.25.5A.75.75 0 0 0 10.956 10.558Zm-3.987 4.155a.75.75 0 0 0-.086.852l-.195.38a.75.75 0 0 0 .665 1.018h.99a.75.75 0 0 0 .75-.75v-.088c.702-.152 1.4-.352 2.063-.59.57-.201 1.272-.427 1.272-1.097 0-.726-.585-1.198-1.521-1.427-1.061-.257-2.135-.52-3.146-.777-.215-.054-.47-.101-.737-.15a.75.75 0 0 0-.736.312l-.25.5A.75.75 0 0 0 6.969 14.713Z" clip-rule="evenodd" />
-        </svg>
-        Hướng dẫn
-    </button>
+        // Global variables for Firebase configuration and app ID
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : '';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-    <!-- Footer -->
-    <footer class="text-center text-gray-500 mt-10 text-sm">
-        <p>&copy; 2025 HTB VocabBoost. Bảo lưu mọi quyền.</p>
-    </footer>
+        // Initialize Firebase
+        let app, db, auth, userId;
+        let editingFlashcardSetId = null;
 
-    <script>
-        // Global variables for application state
-        let activeTab = 'create';
-        let generatedVocab = [];
-        let generatedNewsletterHtml = ''; // Stores the processed HTML string for newsletter
-        let savedFlashcards = [];
-        let savedNewsletters = [];
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            console.log("Firebase initialized successfully.");
 
-        let currentFlashcardIndex = 0;
-        let isFlipped = false;
-        let shuffledFlashcards = [];
-        let activeFlashcardSetId = null; // Changed from selectedFlashcardSet for clarity
-        let activeNewsletterId = null; // New state for active newsletter
+            async function authenticate() {
+                try {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                        console.log("Signed in with custom token.");
+                    } else {
+                        await signInAnonymously(auth);
+                        console.log("Signed in anonymously.");
+                    }
+                    userId = auth.currentUser.uid;
+                    console.log("Authenticated with user ID:", userId);
+                    setupFirestoreListeners();
+                } catch (error) {
+                    console.error("Firebase authentication failed:", error);
+                    showCustomAlert("Lỗi xác thực Firebase: " + error.message);
+                }
+            }
+            authenticate();
+        } catch (error) {
+            console.error("Failed to initialize Firebase:", error);
+            showCustomAlert("Lỗi khởi tạo Firebase: " + error.message);
+        }
 
         // DOM elements
         const createTabBtn = document.getElementById('createTab');
@@ -645,1135 +443,846 @@
         const createMaterialsSection = document.getElementById('create-materials');
         const reviewLearnSection = document.getElementById('review-learn');
 
-        const vocabLevelRadios = document.querySelectorAll('input[name="vocabLevel"]'); // New: Level radio buttons
+        const vocabLevelRadios = document.getElementsByName('vocabLevel');
         const vocabTopicInput = document.getElementById('vocabTopicInput');
         const generateVocabBtn = document.getElementById('generateVocabBtn');
         const vocabLoading = document.getElementById('vocabLoading');
         const vocabError = document.getElementById('vocabError');
         const vocabList = document.getElementById('vocabList');
         const noVocabMessage = document.getElementById('noVocabMessage');
+        const vocabActionButtons = document.getElementById('vocabActionButtons');
         const saveFlashcardsBtn = document.getElementById('saveFlashcardsBtn');
+        const cancelEditBtn = document.getElementById('cancelEditBtn');
+        let generatedVocabData = [];
 
-        const newsletterTopicInput = document.getElementById('newsletterTopicInput');
-        const generateNewsletterBtn = document.getElementById('generateNewsletterBtn');
-        const newsletterLoading = document.getElementById('newsletterLoading');
-        const newsletterError = document.getElementById('newsletterError');
-        const newsletterContentDiv = document.getElementById('newsletterContent'); // For create tab
-        const noNewsletterMessage = document.getElementById('noNewsletterMessage');
-        const saveNewsletterBtn = document.getElementById('saveNewsletterBtn');
+        const documentTypeSelect = document.getElementById('documentTypeSelect');
+        const documentTopicInput = document.getElementById('documentTopicInput');
+        const generateDocumentBtn = document.getElementById('generateDocumentBtn');
+        const documentLoading = document.getElementById('documentLoading');
+        const documentError = document.getElementById('documentError');
+        const documentContent = document.getElementById('documentContent');
+        const noDocumentMessage = document.getElementById('noDocumentMessage');
+        const saveDocumentBtn = document.getElementById('saveDocumentBtn');
+        let generatedDocumentData = {};
 
-        const flashcardListContainer = document.getElementById('flashcardListContainer'); // New container for flashcard grid
-        const savedFlashcardGrid = document.getElementById('savedFlashcardGrid'); // New DOM element
-        const noSavedFlashcardsMessage = document.getElementById('noSavedFlashcardsMessage'); // New DOM element
-        const flashcardLearningArea = document.getElementById('flashcardLearningArea'); // New: Area for active flashcard learning
-        const flashcardDisplay = document.getElementById('flashcardDisplay');
-        const flashcardContainer = document.getElementById('flashcardContainer');
-        const flashcardContentWrapper = document.getElementById('flashcardContentWrapper'); // New: Wrapper for slide effect
-        const flashcardInner = document.getElementById('flashcardInner');
-        const flashcardWord = document.getElementById('flashcardWord');
-        const flashcardMeaning = document.getElementById('flashcardMeaning');
-        const flashcardIPA = document.getElementById('flashcardIPA');
-        const flashcardExample = document.getElementById('flashcardExample');
-        const prevFlashcardBtn = document.getElementById('prevFlashcardBtn');
-        const nextFlashcardBtn = document.getElementById('nextFlashcardBtn');
+        const flashcardSetsContainer = document.getElementById('flashcardSets');
+        const noFlashcardSetsMessage = document.getElementById('noFlashcardSetsMessage');
+        const flashcardLearningArea = document.getElementById('flashcardLearningArea');
+        const backToFlashcardListBtn = document.getElementById('backToFlashcardListBtn');
+        const currentFlashcardSetTitle = document.getElementById('currentFlashcardSetTitle');
         const flashcardCounter = document.getElementById('flashcardCounter');
-        const flashcardPronounceBtn = document.getElementById('flashcardPronounceBtn'); // New: Pronounce button for flashcard
-        const backToFlashcardListBtn = document.getElementById('backToFlashcardListBtn'); // New: Back button
+        const flashcardInner = document.getElementById('flashcardInner');
+        const flashcardContentWrapper = document.getElementById('flashcardContentWrapper');
+        const flashcardListContainer = document.getElementById('flashcardListContainer');
+        const flashcardWord = document.getElementById('flashcardWord');
+        const flashcardIpa = document.getElementById('flashcardIpa');
+        const backFlashcardWord = document.getElementById('backFlashcardWord');
+        const backFlashcardLevel = document.getElementById('backFlashcardLevel');
+        const backFlashcardIpa = document.getElementById('backFlashcardIpa');
+        const backFlashcardMeaning = document.getElementById('backFlashcardMeaning');
+        const backFlashcardExample = document.getElementById('backFlashcardExample');
+        const prevCardBtn = document.getElementById('prevCardBtn');
+        const nextCardBtn = document.getElementById('nextCardBtn');
+        const backPronounceBtn = document.getElementById('backPronounceBtn');
+        let currentFlashcardSet = [];
+        let currentCardIndex = 0;
 
-        const newsletterListContainer = document.getElementById('newsletterListContainer'); // New container for newsletter grid
-        const savedNewsletterGrid = document.getElementById('savedNewsletterGrid'); // New DOM element
-        const noSavedNewslettersMessage = document.getElementById('noSavedNewslettersMessage'); // New DOM element
-        const newsletterReadingArea = document.getElementById('newsletterReadingArea'); // New: Area for active newsletter reading
-        const newsletterTitleDisplay = document.getElementById('newsletterTitleDisplay'); // New: for displaying newsletter title
-        const selectedNewsletterContent = document.getElementById('selectedNewsletterContent'); // For review tab
-        const noSelectedNewsletterContentMessage = document.getElementById('noSelectedNewsletterContentMessage'); // Changed message ID
-        const backToNewsletterListBtn = document.getElementById('backToNewsletterListBtn'); // New: Back button
+        const documentSetsContainer = document.getElementById('documentSets');
+        const noDocumentSetsMessage = document.getElementById('noDocumentSetsMessage');
+        const documentReadingArea = document.getElementById('documentReadingArea');
+        const backToDocumentListBtn = document.getElementById('backToDocumentListBtn');
+        const currentDocumentTitle = document.getElementById('currentDocumentTitle');
+        const readingDocumentContent = document.getElementById('readingDocumentContent');
+        const documentListContainer = document.getElementById('documentListContainer');
+        const createFlashcardFromDocumentBtn = document.getElementById('createFlashcardFromDocumentBtn');
+
         const wordPopup = document.getElementById('wordPopup');
-        const popupMeaning = document.getElementById('popupMeaning');
-        const popupIPA = document.getElementById('popupIPA');
-        const popupPartOfSpeech = document.getElementById('popupPartOfSpeech'); // New: DOM element for part of speech
-
-        // Custom Alert DOM elements
         const customAlertOverlay = document.getElementById('customAlertOverlay');
-        const customAlertMessage = document.getElementById('customAlertMessage');
         const customAlertCloseBtn = document.getElementById('customAlertCloseBtn');
 
-        // New: Guide Modal DOM elements
-        const guideBtn = document.getElementById('guideBtn');
-        const guideModalOverlay = document.getElementById('guideModalOverlay');
-        const guideModalCloseBtn = document.getElementById('guideModalCloseBtn');
+        // Event Listeners
+        window.addEventListener('load', () => {
+            if (auth.currentUser) {
+                userId = auth.currentUser.uid;
+                setupFirestoreListeners();
+            }
+        });
+        createTabBtn.addEventListener('click', () => switchTab('create'));
+        reviewTabBtn.addEventListener('click', () => switchTab('review'));
+        generateVocabBtn.addEventListener('click', generateVocabulary);
+        saveFlashcardsBtn.addEventListener('click', saveOrUpdateFlashcardSet);
+        cancelEditBtn.addEventListener('click', resetVocabForm);
+        generateDocumentBtn.addEventListener('click', generateDocument);
+        saveDocumentBtn.addEventListener('click', saveDocument);
+        createFlashcardFromDocumentBtn.addEventListener('click', createFlashcardFromDocument);
 
-        // Reference to the main content area for positioning calculations
-        const main = document.querySelector('main'); 
+        backToFlashcardListBtn.addEventListener('click', () => showSection('flashcardList'));
+        flashcardInner.addEventListener('click', flipFlashcard);
+        prevCardBtn.addEventListener('click', () => navigateFlashcard('prev'));
+        nextCardBtn.addEventListener('click', () => navigateFlashcard('next'));
+        backPronounceBtn.addEventListener('click', () => pronounceText(currentFlashcardSet[currentCardIndex].word));
 
-        // --- Utility Functions ---
+        backToDocumentListBtn.addEventListener('click', () => showSection('documentList'));
 
-        // Show custom alert
-        function showCustomAlert(message) {
-            customAlertMessage.textContent = message;
-            customAlertOverlay.classList.remove('hidden'); // Remove hidden first
-            // Use requestAnimationFrame to ensure the browser has painted the initial state
-            requestAnimationFrame(() => {
-                customAlertOverlay.classList.add('is-visible'); // Then add is-visible to trigger transition
-            });
-        }
-
-        // Hide custom alert
         customAlertCloseBtn.addEventListener('click', () => {
             customAlertOverlay.classList.remove('is-visible');
-            // Add a small delay for the transition to complete before hiding fully
-            setTimeout(() => {
-                customAlertOverlay.classList.add('hidden');
-            }, 300); 
+            setTimeout(() => customAlertOverlay.classList.add('hidden'), 300);
+        });
+        document.addEventListener('click', (event) => {
+            if (!wordPopup.contains(event.target) && !event.target.closest('.highlighted-word')) {
+                wordPopup.classList.remove('is-visible');
+                setTimeout(() => wordPopup.classList.add('hidden'), 200);
+            }
         });
 
-        // Show guide modal
-        function showGuideModal() {
-            guideModalOverlay.classList.remove('hidden'); // Remove hidden first
-            // Use requestAnimationFrame to ensure the browser has painted the initial state
-            requestAnimationFrame(() => {
-                guideModalOverlay.classList.add('is-visible'); // Then add is-visible to trigger transition
+        function showCustomAlert(message) {
+            const msgElement = document.getElementById('customAlertMessage');
+            msgElement.textContent = message;
+            customAlertOverlay.classList.remove('hidden');
+            setTimeout(() => customAlertOverlay.classList.add('is-visible'), 10);
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-section').forEach(section => section.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(button => {
+                button.classList.remove('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'shadow-lg', 'transform', 'scale-105');
+                button.classList.add('bg-gray-700', 'text-gray-300', 'hover:bg-gray-600', 'hover:text-white');
             });
-        }
 
-        // Hide guide modal
-        guideModalCloseBtn.addEventListener('click', () => {
-            guideModalOverlay.classList.remove('is-visible');
-            setTimeout(() => {
-                guideModalOverlay.classList.add('hidden');
-            }, 300);
-        });
-
-
-        // Load data from localStorage on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            savedFlashcards = JSON.parse(localStorage.getItem('vocabBoostFlashcards')) || [];
-            savedNewsletters = JSON.parse(localStorage.getItem('vocabBoostNewsletters')) || [];
-            renderSavedFlashcards(); // Render cards instead of select
-            renderSavedNewsletters(); // Render cards instead of select
-            showTab(activeTab); // Show the initial tab
-            setupEventListeners(); // Setup delegated event listeners
-        });
-
-        // Save data to localStorage
-        function saveData(key, data) {
-            localStorage.setItem(key, JSON.stringify(data));
-        }
-
-        // --- Pronunciation Function ---
-        function speakWord(word, lang = 'en-US') {
-            if ('speechSynthesis' in window) {
-                // Cancel any ongoing speech
-                speechSynthesis.cancel(); 
-                const utterance = new SpeechSynthesisUtterance(word);
-                utterance.lang = lang; // Use default language (en-US)
-                speechSynthesis.speak(utterance);
+            if (tabName === 'create') {
+                createMaterialsSection.classList.add('active');
+                createTabBtn.classList.remove('bg-gray-700', 'text-gray-300', 'hover:bg-gray-600', 'hover:text-white');
+                createTabBtn.classList.add('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'shadow-lg', 'transform', 'scale-105');
             } else {
-                showCustomAlert('Trình duyệt của bạn không hỗ trợ phát âm.');
+                reviewLearnSection.classList.add('active');
+                reviewTabBtn.classList.remove('bg-gray-700', 'text-gray-300', 'hover:bg-gray-600', 'hover:text-white');
+                reviewTabBtn.classList.add('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'shadow-lg', 'transform', 'scale-105');
+                // By default, show flashcard list when switching to review
+                showSection('flashcardList');
             }
         }
 
-        // --- Check for duplicate words in saved data (flashcards and newsletters) ---
-        function isDuplicateWordInSavedData(wordToCheck) {
-            const lowerCaseWord = wordToCheck.toLowerCase();
-
-            // Check in saved flashcards
-            const flashcardWords = savedFlashcards.flatMap(set => set.words.map(w => w.word.toLowerCase()));
-            if (flashcardWords.includes(lowerCaseWord)) {
-                return true;
-            }
-
-            // Check in saved newsletters (extract highlighted words)
-            const newsletterWords = savedNewsletters.flatMap(nl => {
-                const doc = new DOMParser().parseFromString(nl.content, 'text/html');
-                const highlightedSpans = doc.querySelectorAll('.highlighted-word');
-                return Array.from(highlightedSpans).map(span => {
-                    const tempSpan = document.createElement('span');
-                    tempSpan.innerHTML = span.innerHTML;
-                    return tempSpan.textContent.toLowerCase();
-                });
+        function showSection(sectionName) {
+            const sections = [flashcardListContainer, flashcardLearningArea, documentListContainer, documentReadingArea];
+            sections.forEach(sec => {
+                sec.classList.remove('active');
+                sec.classList.add('hidden');
             });
-            if (newsletterWords.includes(lowerCaseWord)) {
-                return true;
-            }
-
-            return false;
-        }
-
-        // --- Event Delegation Setup ---
-        function setupEventListeners() {
-            // Tab Switching Event Listeners
-            createTabBtn.addEventListener('click', () => showTab('create'));
-            reviewTabBtn.addEventListener('click', () => showTab('review'));
-
-            // Enter Key Press Listeners
-            vocabTopicInput.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter') {
-                    event.preventDefault(); // Prevent default form submission
-                    generateVocabBtn.click();
-                }
-            });
-
-            newsletterTopicInput.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter') {
-                    event.preventDefault(); // Prevent default form submission
-                    generateNewsletterBtn.click();
-                }
-            });
-
-            // Delegated event listener for vocabList (delete buttons, pronounce buttons)
-            vocabList.addEventListener('click', (event) => {
-                const target = event.target;
-                if (target.classList.contains('delete-vocab-btn')) {
-                    const index = parseInt(target.dataset.index);
-                    removeVocabWord(index);
-                } else if (target.classList.contains('pronounce-btn')) {
-                    const wordToSpeak = target.dataset.word;
-                    speakWord(wordToSpeak);
-                }
-            });
-
-            // Delegated event listener for savedFlashcardGrid (learn and delete buttons)
-            savedFlashcardGrid.addEventListener('click', (event) => {
-                const target = event.target;
-                if (target.classList.contains('learn-flashcard-btn')) {
-                    const setId = parseInt(target.dataset.id);
-                    learnFlashcardSet(setId);
-                } else if (target.classList.contains('delete-flashcard-set-btn')) {
-                    const setId = parseInt(target.dataset.id);
-                    deleteFlashcardSet(setId);
-                }
-            });
-
-            // Delegated event listener for savedNewsletterGrid (read and delete buttons)
-            savedNewsletterGrid.addEventListener('click', (event) => {
-                const target = event.target;
-                if (target.classList.contains('read-newsletter-btn')) {
-                    const nlId = parseInt(target.dataset.id);
-                    readNewsletter(nlId);
-                } else if (target.classList.contains('delete-newsletter-btn')) {
-                    const nlId = parseInt(target.dataset.id);
-                    deleteNewsletter(nlId);
-                }
-            });
-
-            // Event listeners for clicking on highlighted words in newsletter
-            // Apply to both the content div in "create" tab and "review" tab
-            newsletterContentDiv.addEventListener('click', handleWordClick); // For create tab
-            selectedNewsletterContent.addEventListener('click', handleWordClick); // For review tab
-
-            // Hide popup when clicking anywhere else on the document
-            document.addEventListener('click', (event) => {
-                // Check if the click was not inside the popup AND not on a highlighted word
-                if (!wordPopup.contains(event.target) && !event.target.classList.contains('highlighted-word') && wordPopup.classList.contains('is-visible')) {
-                    wordPopup.classList.remove('is-visible');
-                    setTimeout(() => {
-                        wordPopup.classList.add('hidden');
-                    }, 200);
-                }
-            });
-
-            // Guide Button Event Listener
-            guideBtn.addEventListener('click', showGuideModal);
-        }
-
-
-        // Show/hide tabs
-        function showTab(tabId) {
-            activeTab = tabId;
-            // Define all tab buttons and sections
-            const tabs = [
-                { btn: createTabBtn, section: createMaterialsSection, id: 'create' },
-                { btn: reviewTabBtn, section: reviewLearnSection, id: 'review' }
-            ];
-
-            tabs.forEach(tab => {
-                if (tab.id === tabId) {
-                    tab.section.classList.remove('hidden');
-                    tab.btn.classList.add('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'shadow-lg', 'transform', 'scale-105');
-                    tab.btn.classList.remove('bg-gray-700', 'text-gray-300', 'hover:bg-gray-600', 'hover:text-white');
-                } else {
-                    tab.section.classList.add('hidden');
-                    tab.btn.classList.remove('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'shadow-lg', 'transform', 'scale-105');
-                    tab.btn.classList.add('bg-gray-700', 'text-gray-300', 'hover:bg-gray-600', 'hover:text-white');
-                }
-            });
-
-            // Special handling for review tab sections
-            if (tabId === 'review') {
-                flashcardListContainer.classList.remove('hidden');
-                flashcardListContainer.classList.add('is-visible');
-                flashcardLearningArea.classList.add('hidden');
-                flashcardLearningArea.classList.remove('is-visible');
-
-                newsletterListContainer.classList.remove('hidden');
-                newsletterListContainer.classList.add('is-visible');
-                newsletterReadingArea.classList.add('hidden');
-                newsletterReadingArea.classList.remove('is-visible');
+            const activeSection = document.getElementById(sectionName + (sectionName.includes('List') ? 'Container' : 'Area'));
+            if (activeSection) {
+                activeSection.classList.remove('hidden');
+                activeSection.classList.add('active');
             }
         }
 
-        // --- Gemini API Call Function ---
-        async function callGeminiAPI(prompt, schema = null) {
-            let chatHistory = [];
-            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+        function setupFirestoreListeners() {
+            if (!db || !userId) return;
 
-            const payload = { contents: chatHistory };
-            if (schema) {
-                payload.generationConfig = {
+            const flashcardColRef = collection(db, `artifacts/${appId}/users/${userId}/flashcard_sets`);
+            onSnapshot(flashcardColRef, (snapshot) => {
+                const flashcardSets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderFlashcardSets(flashcardSets);
+            }, (error) => console.error("Error listening to flashcard sets:", error));
+
+            const documentColRef = collection(db, `artifacts/${appId}/users/${userId}/documents`);
+            onSnapshot(documentColRef, (snapshot) => {
+                const documentSets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderDocumentSets(documentSets);
+            }, (error) => console.error("Error listening to document sets:", error));
+        }
+
+        // --- Flashcard & Vocab Functions ---
+        async function generateVocabulary() {
+            if (!db || !userId) {
+                showCustomAlert("Lỗi: Vui lòng đợi xác thực Firebase hoàn tất.");
+                return;
+            }
+            editingFlashcardSetId = null;
+            const selectedLevel = document.querySelector('input[name="vocabLevel"]:checked').value;
+            const topic = vocabTopicInput.value || (selectedLevel === 'B2' ? "một danh sách 15 từ vựng B2" : "một danh sách 10 từ vựng C1/C2");
+
+            vocabLoading.classList.remove('hidden');
+            vocabError.classList.add('hidden');
+            noVocabMessage.classList.add('hidden');
+            vocabActionButtons.classList.add('hidden');
+
+            const prompt = `Bạn là một trợ lý ngôn ngữ. Hãy tạo một danh sách từ vựng tiếng Anh theo yêu cầu sau: "${topic}". Đối với mỗi từ, hãy cung cấp từ, phiên âm IPA, loại từ, nghĩa tiếng Việt và một câu ví dụ tiếng Anh. Cấp độ từ vựng yêu cầu là ${selectedLevel}. Hãy trả về kết quả dưới dạng một mảng JSON. Mỗi đối tượng trong mảng sẽ có các thuộc tính: word, ipa, type, meaning, example và level. Đảm bảo câu ví dụ tự nhiên và dễ hiểu.`;
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
                     responseMimeType: "application/json",
-                    responseSchema: schema
-                };
-            }
-
-            // API Key của bạn
-            const apiKey = "AIzaSyDe33qK44IF_aCXQEOwGqDCZ5iQCN9I5Qg"; 
-            // Sử dụng mô hình gemini-2.5-flash
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                    responseSchema: {
+                        type: "ARRAY",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                "word": { "type": "STRING" },
+                                "ipa": { "type": "STRING" },
+                                "type": { "type": "STRING" },
+                                "meaning": { "type": "STRING" },
+                                "example": { "type": "STRING" },
+                                "level": { "type": "STRING", "enum": ["B2", "C1/C2"] }
+                            },
+                        }
+                    }
+                }
+            };
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
             try {
-                const response = await fetch(apiUrl, {
+                const response = await fetchWithExponentialBackoff(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
                 const result = await response.json();
+                const jsonString = result.candidates[0].content.parts[0].text;
+                const parsedData = JSON.parse(jsonString);
 
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    const text = result.candidates[0].content.parts[0].text;
-                    return schema ? JSON.parse(text) : text;
+                if (Array.isArray(parsedData) && parsedData.length > 0) {
+                    generatedVocabData = parsedData;
+                    renderGeneratedVocab(generatedVocabData);
+                    vocabActionButtons.classList.remove('hidden');
+                    saveFlashcardsBtn.textContent = "Lưu thành Bộ Flashcard";
                 } else {
-                    console.error("Unexpected API response structure:", result);
-                    throw new Error("Không thể tạo nội dung. Vui lòng thử lại.");
+                    throw new Error("Không có từ vựng nào được tạo.");
                 }
             } catch (error) {
-                console.error("Error calling Gemini API:", error);
-                throw new Error(`Lỗi API: ${error.message}`);
-            }
-        }
-
-        // --- Generate Vocabulary Function ---
-        generateVocabBtn.addEventListener('click', async () => {
-            vocabLoading.classList.remove('hidden');
-            vocabError.classList.add('hidden');
-            vocabList.innerHTML = '';
-            noVocabMessage.classList.add('hidden');
-            saveFlashcardsBtn.classList.add('hidden');
-            generateVocabBtn.disabled = true;
-
-            let vocabTopic = vocabTopicInput.value.trim(); // Use let as it might be modified
-            const selectedLevel = document.querySelector('input[name="vocabLevel"]:checked').value; // Get selected level
-            
-            let targetWordCount;
-            const defaultB2Count = 15;
-            const defaultC1C2Count = 10;
-
-            // Try to extract number from input
-            const match = vocabTopic.match(/(\d+)\s*(từ vựng|từ)?\s*(.*)/i);
-            let cleanedTopic = vocabTopic;
-
-            if (match && parseInt(match[1]) > 0) {
-                targetWordCount = parseInt(match[1]);
-                cleanedTopic = match[3].trim(); // Extract remaining topic
-            } else {
-                // If no number specified, use default based on level
-                targetWordCount = (selectedLevel === 'B2') ? defaultB2Count : defaultC1C2Count;
-            }
-
-            let levelDescription = (selectedLevel === 'B2') ? 'trình độ B2' : 'trình độ C1/C2';
-
-            let currentGeneratedWordsForSession = []; // Tracks words generated in *this session* (multiple clicks)
-            
-            const schema = {
-                type: "ARRAY",
-                items: {
-                    type: "OBJECT",
-                    properties: {
-                        "word": { "type": "STRING" },
-                        "meaning": { "type": "STRING" },
-                        "ipa": { "type": "STRING" },
-                        "example": { "type": "STRING" },
-                        "partOfSpeech": { "type": "STRING" }
-                    },
-                    "propertyOrdering": ["word", "meaning", "ipa", "example", "partOfSpeech"]
-                }
-            };
-
-            try {
-                for (let attempt = 0; attempt < 5; attempt++) { // Max 5 attempts to get all words
-                    const wordsNeeded = targetWordCount - currentGeneratedWordsForSession.length;
-                    if (wordsNeeded <= 0) {
-                        break; // Already have enough words
-                    }
-
-                    const requestCount = wordsNeeded + 3; // Request a few more than needed to account for potential duplicates
-                    
-                    // Construct the negative constraint for the prompt based on words already collected in this session
-                    const wordsToExcludeFromLLM = currentGeneratedWordsForSession.map(w => `"${w.word}"`).join(', ');
-                    const exclusionPrompt = wordsToExcludeFromLLM ? `Không được trùng lặp với các từ sau: ${wordsToExcludeFromLLM}. ` : '';
-
-                    // Updated prompt to explicitly state partOfSpeech is mandatory and in short form
-                    const prompt = `Tạo một danh sách ${requestCount} từ vựng tiếng Anh ${levelDescription} ${cleanedTopic ? `liên quan đến chủ đề "${cleanedTopic}"` : 'ngẫu nhiên'}. ${exclusionPrompt}Với mỗi từ, cung cấp nghĩa tiếng Việt, phiên âm IPA, loại từ (bắt buộc, dạng viết tắt như "n.", "v.", "adj."), và một câu ví dụ. **Hãy đảm bảo chữ cái đầu tiên của mỗi từ vựng được viết hoa.** Định dạng JSON như sau:
-                    [
-                      {
-                        "word": "Từ vựng",
-                        "meaning": "Nghĩa tiếng Việt",
-                        "ipa": "Phiên âm IPA",
-                        "example": "Câu ví dụ",
-                        "partOfSpeech": "Loại từ (vd: n., v., adj.)"
-                      }
-                    ]
-                    `;
-
-                    const data = await callGeminiAPI(prompt, schema);
-                    
-                    for (const item of data) {
-                        if (currentGeneratedWordsForSession.length >= targetWordCount) {
-                            break; // Stop if target reached during this batch
-                        }
-                        // Check against words already collected in *this session* AND against *saved* words
-                        const isAlreadyInSession = currentGeneratedWordsForSession.some(w => w.word.toLowerCase() === item.word.toLowerCase());
-                        const isAlreadySaved = isDuplicateWordInSavedData(item.word);
-
-                        if (!isAlreadyInSession && !isAlreadySaved) {
-                            currentGeneratedWordsForSession.push(item);
-                        }
-                    }
-
-                    if (currentGeneratedWordsForSession.length === targetWordCount) {
-                        break;
-                    }
-                }
-
-                generatedVocab = currentGeneratedWordsForSession; // Assign the collected words to the global variable
-                renderGeneratedVocab();
-
-                if (generatedVocab.length < targetWordCount) {
-                    vocabError.textContent = `Chỉ tạo được ${generatedVocab.length} từ. Một số từ bị trùng lặp hoặc không thể tạo thêm. Vui lòng thử lại với chủ đề khác hoặc để trống.`;
-                    vocabError.classList.remove('hidden');
-                } else {
-                    vocabError.classList.add('hidden');
-                }
-
-            } catch (error) {
-                vocabError.textContent = error.message;
+                console.error("Lỗi khi tạo từ vựng:", error);
+                vocabError.textContent = "Lỗi khi tạo từ vựng: " + error.message;
                 vocabError.classList.remove('hidden');
+                noVocabMessage.classList.remove('hidden');
             } finally {
                 vocabLoading.classList.add('hidden');
-                generateVocabBtn.disabled = false;
             }
-        });
-
-        // Function to remove a vocabulary word from the generated list
-        function removeVocabWord(index) {
-            generatedVocab.splice(index, 1); // Remove word from array
-            renderGeneratedVocab(); // Re-render the list
-            showCustomAlert('Đã xóa từ vựng.');
         }
 
-        function renderGeneratedVocab() {
+        async function createFlashcardFromDocument() {
+            if (!readingDocumentContent.hasChildNodes()) {
+                showCustomAlert("Vui lòng mở một tài liệu trước.");
+                return;
+            }
+            editingFlashcardSetId = null;
+            const highlightedWords = Array.from(readingDocumentContent.querySelectorAll('.highlighted-word'));
+            if (highlightedWords.length === 0) {
+                showCustomAlert("Tài liệu này không có từ vựng nào được đánh dấu để tạo flashcard.");
+                return;
+            }
+
+            vocabLoading.classList.remove('hidden');
+            vocabError.classList.add('hidden');
+            noVocabMessage.classList.add('hidden');
+            vocabActionButtons.classList.add('hidden');
             vocabList.innerHTML = '';
-            if (generatedVocab.length > 0) {
-                generatedVocab.forEach((item, index) => {
-                    const li = document.createElement('li');
-                    li.className = 'flex flex-col md:flex-row items-start md:items-center p-3 bg-gray-700 rounded-md shadow-sm';
-                    // Add fallback for partOfSpeech if it's empty or undefined
-                    const partOfSpeechDisplay = item.partOfSpeech ? `(${item.partOfSpeech})` : '';
-                    li.innerHTML = `
-                        <div class="flex-1">
-                            <p class="text-lg font-medium text-purple-300">${item.word} 
-                                <button class="pronounce-btn" data-word="${item.word}" title="Nghe phát âm">&#128266;</button>
-                            </p>
-                            <p class="text-gray-300 text-sm italic">${partOfSpeechDisplay} - ${item.meaning} - ${item.ipa}</p>
-                            <p class="text-gray-400 text-sm">"${item.example}"</p>
-                        </div>
-                        <button class="delete-vocab-btn ml-4 px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-200 btn-gradient-hover" data-index="${index}">Xóa</button>
-                    `;
-                    vocabList.appendChild(li);
-                });
-                // No need to attach individual event listeners here due to delegation
-                saveFlashcardsBtn.classList.remove('hidden');
-            } else {
-                noVocabMessage.classList.remove('hidden');
-                saveFlashcardsBtn.classList.add('hidden');
-            }
-        }
+            
+            showCustomAlert("Đang trích xuất từ vựng và tạo flashcard. Vui lòng chờ...");
+            switchTab('create');
 
-        // --- Generate Newsletter Function ---
-        generateNewsletterBtn.addEventListener('click', async () => {
-            newsletterLoading.classList.remove('hidden');
-            newsletterError.classList.add('hidden');
-            newsletterContentDiv.innerHTML = '';
-            noNewsletterMessage.classList.add('hidden');
-            saveNewsletterBtn.classList.add('hidden');
-            generateNewsletterBtn.disabled = true;
+            const wordsToProcess = highlightedWords.map(word => ({
+                word: word.dataset.word,
+                level: word.dataset.level,
+            }));
 
-            const newsletterTopic = newsletterTopicInput.value.trim();
-            const defaultNewsletterTitle = newsletterTopic || `Bản tin ngẫu nhiên ${new Date().toLocaleDateString('vi-VN')}`;
-            const newsletterIcon = getNewsletterIcon(newsletterTopic); // Get icon based on topic
+            const uniqueWords = [...new Map(wordsToProcess.map(item => [item.word, item])).values()];
+            const newVocabData = [];
 
-            const schema = {
-                type: "OBJECT",
-                properties: {
-                    "newsletter_content": { "type": "STRING" },
-                    "vocabulary": {
-                        "type": "ARRAY",
-                        "items": {
-                            "type": "OBJECT",
-                            "properties": {
-                                "word": { "type": "STRING" },
-                                "meaning": { "type": "STRING" },
-                                "ipa": { "type": "STRING" },
-                                "level": { "type": "STRING", "enum": ["B2", "C1/C2"] },
-                                "partOfSpeech": { "type": "STRING" } // New: Added partOfSpeech
-                            },
-                            "propertyOrdering": ["word", "meaning", "ipa", "level", "partOfSpeech"] // New: Added partOfSpeech
+            for (const item of uniqueWords) {
+                const prompt = `Cung cấp nghĩa tiếng Việt, phiên âm IPA và một câu ví dụ tiếng Anh cho từ "${item.word}" ở cấp độ ${item.level}. Trả về một đối tượng JSON với các thuộc tính "ipa", "meaning" và "example".`;
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: { "ipa": { "type": "STRING" }, "meaning": { "type": "STRING" }, "example": { "type": "STRING" } },
                         }
                     }
+                };
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                try {
+                    const response = await fetchWithExponentialBackoff(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+                    const jsonString = result.candidates[0].content.parts[0].text;
+                    const data = JSON.parse(jsonString);
+                    newVocabData.push({ ...item, ...data });
+                } catch (error) {
+                    console.error(`Lỗi khi tạo từ vựng "${item.word}":`, error);
+                    // Add word with error message
+                    newVocabData.push({ ...item, ipa: 'Lỗi', meaning: 'Không thể lấy nghĩa', example: 'Lỗi khi tạo từ vựng.' });
                 }
-            };
-
-            // Collect all highlighted words from saved newsletters to use as a soft exclusion list for AI
-            const wordsToExcludeFromNewsletterLLM = savedNewsletters.flatMap(nl => {
-                const doc = new DOMParser().parseFromString(nl.content, 'text/html');
-                const highlightedSpans = doc.querySelectorAll('.highlighted-word');
-                return Array.from(highlightedSpans).map(span => {
-                    const tempSpan = document.createElement('span');
-                    tempSpan.innerHTML = span.innerHTML;
-                    return `"${tempSpan.textContent}"`; // Get the actual word text
-                });
-            }).join(', ');
-
-            // FIX: Corrected typo from wordsToExcludeFromLLM to wordsToExcludeFromNewsletterLLM
-            const exclusionPromptForNewsletter = wordsToExcludeFromNewsletterLLM ? `Hạn chế sử dụng các từ sau: ${wordsToExcludeFromNewsletterLLM}. ` : '';
-
-            // UPDATED: Limit to the 10 most recent newsletters for diversity prompt to avoid long prompts
-            const recentNewsletterIdeas = savedNewsletters
-                .filter(nl => newsletterTopic && nl.name.toLowerCase().includes(newsletterTopic.toLowerCase()))
-                .slice(-10) // Get the last 10 elements (most recent)
-                .map(nl => {
-                    // Extract first paragraph as a brief summary of content
-                    const doc = new DOMParser().parseFromString(nl.content, 'text/html');
-                    const firstParagraph = doc.querySelector('p')?.textContent.trim().substring(0, 100) + '...'; // Take first 100 chars
-                    return `"${nl.name}" (ý chính: ${firstParagraph})`;
-                })
-                .join('; ');
-
-            const diversityPrompt = recentNewsletterIdeas ? 
-                `Hãy tạo nội dung mới mẻ, khám phá các khía cạnh khác và tránh trùng lặp ý tưởng chính đã có trong các bản tin trước về chủ đề này, ví dụ: ${recentNewsletterIdeas}.` : 
-                `Hãy tạo nội dung mới mẻ và đa dạng.`;
-
-            // Updated prompt to explicitly state partOfSpeech is mandatory and in short form
-            const prompt = `Viết một bản tin ngắn bằng tiếng Anh (khoảng 150-200 từ) ${newsletterTopic ? `về chủ đề "${newsletterTopic}"` : 'ngẫu nhiên'}. ${exclusionPromptForNewsletter}${diversityPrompt} Sau đó, liệt kê tất cả các từ vựng trình độ B2, C1, C2 trong bản tin đó, kèm theo nghĩa tiếng Việt, phiên âm IPA, loại từ (bắt buộc, dạng viết tắt như "n.", "v.", "adj."), và cấp độ (B2 hoặc C1/C2). Trả về dưới dạng JSON với hai trường: 'newsletter_content' (nội dung bản tin thô, sử dụng \\n\\n cho các đoạn văn) và 'vocabulary' (một mảng các đối tượng từ vựng).
-            Ví dụ JSON:
-            {
-              "newsletter_content": "The ubiquitous nature of technology has transformed our daily lives.\\n\\nThis transformation is evident in various sectors...",
-              "vocabulary": [
-                {
-                  "word": "ubiquitous",
-                  "meaning": "phổ biến",
-                  "ipa": "/juːˈbɪkwitəs/",
-                  "level": "C1/C2",
-                  "partOfSpeech": "adj."
-                },
-                {
-                  "word": "transform",
-                  "meaning": "biến đổi",
-                  "ipa": "/trænsˈfɔːrm/",
-                  "level": "B2",
-                  "partOfSpeech": "v."
-                }
-              ]
             }
-            `;
+
+            generatedVocabData = newVocabData;
+            renderGeneratedVocab(generatedVocabData);
+            vocabActionButtons.classList.remove('hidden');
+            saveFlashcardsBtn.textContent = "Lưu thành Bộ Flashcard";
+            vocabLoading.classList.add('hidden');
+            showCustomAlert("Đã tạo flashcard xong! Bạn có thể xem lại và lưu.");
+        }
+        
+        function renderGeneratedVocab(vocabList) {
+            vocabList.innerHTML = ''; // Clear existing list
+            if (vocabList.length === 0) {
+                noVocabMessage.classList.remove('hidden');
+                vocabList.appendChild(noVocabMessage);
+                vocabActionButtons.classList.add('hidden');
+                return;
+            } else {
+                noVocabMessage.classList.add('hidden');
+            }
+
+            vocabList.forEach((vocab, index) => {
+                const li = document.createElement('li');
+                li.className = `flex items-center justify-between bg-gray-900 p-4 rounded-xl border-l-4 ${vocab.level === 'B2' ? 'border-blue-500' : 'border-red-500'}`;
+                li.innerHTML = `
+                    <div class="flex-1">
+                        <div class="flex items-center">
+                            <span class="text-xl font-bold text-white">${vocab.word}</span>
+                            <button class="pronounce-btn text-purple-400 hover:text-purple-300 ml-3 text-lg transition-colors" data-word="${vocab.word}">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </button>
+                        </div>
+                        <p class="text-gray-400 text-sm italic mt-1">${vocab.ipa}</p>
+                        <p class="text-gray-300 mt-2">${vocab.meaning} <span class="level-tag text-xs font-semibold px-2 py-0.5 rounded-full ${vocab.level === 'B2' ? 'b2-level' : 'c1-c2-level'}">${vocab.level}</span></p>
+                        <p class="text-gray-500 text-sm mt-1">Ví dụ: "${vocab.example}"</p>
+                    </div>
+                    <button class="delete-vocab-btn text-red-500 hover:text-red-400 transition-colors p-2 rounded-full" data-index="${index}">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                `;
+                vocabList.appendChild(li);
+            });
+
+            document.querySelectorAll('.delete-vocab-btn').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const index = parseInt(event.currentTarget.dataset.index);
+                    generatedVocabData.splice(index, 1);
+                    renderGeneratedVocab(generatedVocabData);
+                });
+            });
+            document.querySelectorAll('.pronounce-btn').forEach(button => {
+                button.addEventListener('click', (event) => pronounceText(event.currentTarget.dataset.word));
+            });
+        }
+
+        async function saveOrUpdateFlashcardSet() {
+            if (generatedVocabData.length === 0) {
+                showCustomAlert("Vui lòng tạo từ vựng trước khi lưu.");
+                return;
+            }
+
+            const title = `Bộ từ vựng cấp độ ${generatedVocabData[0].level} (${generatedVocabData.length} từ)`;
+            const level = generatedVocabData[0].level;
 
             try {
-                const data = await callGeminiAPI(prompt, schema);
-                let newsletterText = data.newsletter_content;
-                const vocabularyWords = data.vocabulary;
+                const flashcardSet = {
+                    title: title,
+                    level: level,
+                    vocabularies: generatedVocabData,
+                    timestamp: new Date()
+                };
 
-                // NEW FIX: Clean newsletterText from any unintended data- attributes or similar LLM artifacts
-                // This regex aims to remove any " data-attribute="value"" pattern, including stray quotes and angle brackets.
-                // It's more aggressive to catch various malformed outputs from the LLM.
-                newsletterText = newsletterText
-                    .replace(/data-[a-zA-Z0-9-]+="[^"]*?"/g, '') // Remove data-attributes with double quotes
-                    .replace(/data-[a-zA-Z0-9-]+='[^']*?'/g, '')  // Remove data-attributes with single quotes
-                    .replace(/data-[a-zA-Z0-9-]+=\S+/g, '')     // Remove data-attributes without quotes (e.g., data-key=value)
-                    .replace(/"\s*>/g, '>')                      // Remove stray " > patterns
-                    .replace(/["']/g, '')                        // Remove any remaining stray single/double quotes
-                    .replace(/[<>]/g, '')                        // Remove any remaining stray angle brackets
-                    .replace(/\s+/g, ' ')                        // Normalize multiple spaces to single space
-                    .trim();                                     // Trim leading/trailing whitespace
-
-                // Process newsletterText for paragraph breaks
-                newsletterText = newsletterText.split('\n\n').map(p => `<p class="mb-4">${p.trim()}</p>`).join('');
-
-                // Set to track words that have already been highlighted in this specific newsletter generation
-                const wordsHighlightedInCurrentNewsletter = new Set();
-
-                // Sort words by length in descending order to avoid issues with substrings (e.g., "carbon" before "decarbonization")
-                vocabularyWords.sort((a, b) => b.word.length - a.word.length);
-
-                for (const item of vocabularyWords) {
-                    // Sanitize the word and its attributes to prevent HTML injection or malformed data
-                    let cleanWord = String(item.word || '').replace(/<[^>]*>/g, '').trim(); // Remove any HTML tags
-                    cleanWord = cleanWord.replace(/"/g, '&quot;'); // Escape double quotes
-                    cleanWord = cleanWord.replace(/'/g, '&#039;'); // Escape single quotes
-                    // Also remove any data- attributes that might have been accidentally included by AI
-                    cleanWord = cleanWord.split(' data-')[0]; // Take only the part before " data-" if present
-
-                    const lowerCaseCleanWord = cleanWord.toLowerCase();
-
-                    // Only highlight if this word has NOT already been highlighted in *this specific newsletter generation*.
-                    if (wordsHighlightedInCurrentNewsletter.has(lowerCaseCleanWord)) {
-                        continue; // Skip if already highlighted in this newsletter
-                    }
-
-                    const levelClass = item.level === 'B2' ? 'b2-level' : 'c1-c2-level';
-                    // Sanitize attributes as well
-                    const partOfSpeechAttr = String(item.partOfSpeech || '').replace(/"/g, '&quot;');
-                    const meaningAttr = String(item.meaning || '').replace(/"/g, '&quot;');
-                    const ipaAttr = String(item.ipa || '').replace(/"/g, '&quot;');
-
-                    const replacementHtml = `<span class="highlighted-word ${levelClass}" data-meaning="${meaningAttr}" data-ipa="${ipaAttr}" data-part-of-speech="${partOfSpeechAttr}">${cleanWord}</span>`; 
-
-                    // Find the first occurrence of the word in the current newsletterText
-                    // Use a regex with word boundaries to ensure whole word matching
-                    // No 'g' flag to ensure only the first match is replaced
-                    const regex = new RegExp(`\\b${cleanWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i'); 
-
-                    // Replace only the first occurrence
-                    if (newsletterText.match(regex)) { // Check if word exists before attempting to replace
-                        newsletterText = newsletterText.replace(regex, replacementHtml);
-                        wordsHighlightedInCurrentNewsletter.add(lowerCaseCleanWord); // Mark as highlighted for this newsletter
-                    }
-                }
-                
-                generatedNewsletterHtml = newsletterText;
-
-                // Store title and icon along with content
-                newsletterContentDiv.dataset.title = defaultNewsletterTitle;
-                newsletterContentDiv.dataset.icon = newsletterIcon;
-
-                renderGeneratedNewsletter();
-            } catch (error) {
-                newsletterError.textContent = error.message;
-                newsletterError.classList.remove('hidden');
-            } finally {
-                newsletterLoading.classList.add('hidden');
-                generateNewsletterBtn.disabled = false;
-            }
-        });
-
-        function renderGeneratedNewsletter() {
-            if (generatedNewsletterHtml) {
-                newsletterContentDiv.innerHTML = generatedNewsletterHtml;
-                newsletterContentDiv.classList.remove('hidden');
-                noNewsletterMessage.classList.add('hidden');
-                saveNewsletterBtn.classList.remove('hidden');
-            } else {
-                newsletterContentDiv.innerHTML = '';
-                newsletterContentDiv.classList.add('hidden');
-                noNewsletterMessage.classList.remove('hidden');
-                saveNewsletterBtn.classList.add('hidden');
-            }
-        }
-
-        // Function to get a lively icon based on topic
-        function getNewsletterIcon(topic) {
-            const lowerTopic = topic.toLowerCase();
-            if (lowerTopic.includes('công nghệ') || lowerTopic.includes('technology')) return '💻';
-            if (lowerTopic.includes('môi trường') || lowerTopic.includes('environment') || lowerTopic.includes('green living')) return '🌳';
-            if (lowerTopic.includes('kinh tế') || lowerTopic.includes('economy')) return '📈';
-            if (lowerTopic.includes('khoa học') || lowerTopic.includes('science')) return '🔬';
-            if (lowerTopic.includes('y tế') || lowerTopic.includes('health')) return '🏥';
-            if (lowerTopic.includes('giáo dục') || lowerTopic.includes('education')) return '📚';
-            if (lowerTopic.includes('nghệ thuật') || lowerTopic.includes('art')) return '🎨';
-            if (lowerTopic.includes('du lịch') || lowerTopic.includes('travel')) return '✈️';
-            if (lowerTopic.includes('xã hội') || lowerTopic.includes('society')) return '🤝';
-            return '📰'; // Default icon for general news
-        }
-
-        // --- Save Data Functions ---
-        saveFlashcardsBtn.addEventListener('click', () => {
-            if (generatedVocab.length === 0) {
-                showCustomAlert('Không có từ vựng nào để lưu.');
-                return;
-            }
-            const selectedLevel = document.querySelector('input[name="vocabLevel"]:checked').value; // Get selected level
-            const newSet = {
-                id: Date.now(),
-                name: vocabTopicInput.value.trim() || `Bộ từ vựng ngẫu nhiên ${new Date().toLocaleDateString('vi-VN')}`,
-                words: generatedVocab,
-                level: selectedLevel // Save the level with the flashcard set
-            };
-            savedFlashcards.push(newSet);
-            saveData('vocabBoostFlashcards', savedFlashcards);
-            generatedVocab = []; // Clear generated vocab after saving
-            vocabTopicInput.value = '';
-            renderGeneratedVocab(); // Re-render to clear display
-            renderSavedFlashcards(); // Re-render saved flashcard grid
-            showCustomAlert('Bộ flashcard đã được lưu thành công!');
-        });
-
-        saveNewsletterBtn.addEventListener('click', () => {
-            if (!generatedNewsletterHtml) {
-                showCustomAlert('Không có bản tin nào để lưu.');
-                return;
-            }
-            const newNewsletter = {
-                id: Date.now(),
-                name: newsletterContentDiv.dataset.title, // Use the title generated
-                icon: newsletterContentDiv.dataset.icon, // Use the icon generated
-                content: generatedNewsletterHtml
-            };
-            savedNewsletters.push(newNewsletter);
-            saveData('vocabBoostNewsletters', savedNewsletters);
-            generatedNewsletterHtml = ''; // Clear generated newsletter after saving
-            newsletterTopicInput.value = '';
-            renderGeneratedNewsletter(); // Re-render to clear display
-            renderSavedNewsletters(); // Re-render saved newsletter grid
-            showCustomAlert('Bản tin đã được lưu thành công!');
-        });
-
-        // --- Flashcard Learning Functions (Card View) ---
-
-        // Function to delete a saved flashcard set
-        function deleteFlashcardSet(setId) {
-            savedFlashcards = savedFlashcards.filter(set => set.id !== setId);
-            saveData('vocabBoostFlashcards', savedFlashcards);
-            renderSavedFlashcards(); // Re-render the grid
-            if (activeFlashcardSetId === setId) {
-                resetFlashcardDisplay(); // Reset display if the active set was deleted
-            }
-            showCustomAlert('Đã xóa bộ flashcard.');
-        }
-
-        // Function to start learning a flashcard set
-        function learnFlashcardSet(setId) {
-            const set = savedFlashcards.find(s => s.id === setId);
-            if (set) {
-                if (set.words.length === 0) {
-                    showCustomAlert('Bộ flashcard này không có từ vựng nào. Vui lòng tạo thêm từ hoặc chọn bộ khác.');
-                    // Ensure the learning area remains hidden or goes back to list if it was already visible
-                    flashcardLearningArea.classList.add('hidden');
-                    flashcardLearningArea.classList.remove('is-visible');
-                    flashcardListContainer.classList.remove('hidden');
-                    flashcardListContainer.classList.add('is-visible');
-                    return; // Stop execution if the set is empty
-                }
-                shuffledFlashcards = [...set.words].sort(() => Math.random() - 0.5);
-                currentFlashcardIndex = 0;
-                isFlipped = false;
-                activeFlashcardSetId = setId; // Set the active set
-                
-                // These lines should only execute if there are words to display
-                flashcardDisplay.classList.remove('hidden'); 
-                updateFlashcardDisplay(); // Initial display without slide
-
-                // Hide newsletter sections if they are visible
-                // This ensures only one learning area is active at a time
-                newsletterListContainer.classList.remove('is-visible');
-                newsletterListContainer.classList.add('hidden');
-                newsletterReadingArea.classList.remove('is-visible');
-                newsletterReadingArea.classList.add('hidden');
-
-                flashcardListContainer.classList.remove('is-visible');
-                flashcardListContainer.classList.add('hidden'); // Hide the list of sets immediately after transition starts
-                
-                setTimeout(() => {
-                    flashcardLearningArea.classList.remove('hidden');
-                    flashcardLearningArea.classList.add('is-visible'); // Show the learning area with transition
-                }, 500); // Delay matches transition duration
-            }
-        }
-
-        // Function to go back to the flashcard list
-        backToFlashcardListBtn.addEventListener('click', () => {
-            flashcardLearningArea.classList.remove('is-visible');
-            flashcardLearningArea.classList.add('hidden'); // Hide the learning area immediately after transition starts
-            
-            setTimeout(() => {
-                renderSavedFlashcards(); // Re-render flashcard list
-                renderSavedNewsletters(); // Re-render newsletter list to ensure it's visible
-                resetFlashcardDisplay(); // Reset display state
-            }, 500); // Delay matches transition duration
-        });
-
-
-        function renderSavedFlashcards() {
-            savedFlashcardGrid.innerHTML = ''; // Clear current grid
-            // Always ensure the list container is visible when this function is called
-            flashcardListContainer.classList.remove('hidden');
-            flashcardListContainer.classList.add('is-visible');
-            // Always ensure the learning area is hidden
-            flashcardLearningArea.classList.add('hidden');
-            flashcardLearningArea.classList.remove('is-visible');
-
-            if (savedFlashcards.length > 0) {
-                noSavedFlashcardsMessage.classList.add('hidden');
-                savedFlashcards.forEach(set => {
-                    const card = document.createElement('div');
-                    // Add level class based on set.level
-                    const levelClass = set.level === 'B2' ? 'b2-level' : 'c1-c2-level'; // Changed to b2-level/c1-c2-level for consistency
-                    card.className = `bg-gray-800 p-4 rounded-lg shadow-md flex flex-col justify-between flashcard-set ${levelClass}`; // Add levelClass here
-                    card.innerHTML = `
-                        <h4 class="text-xl font-semibold text-purple-300 mb-2">${set.name} (${set.level})</h4>
-                        <p class="text-gray-400 text-sm mb-4">${set.words.length} từ</p>
-                        <div class="flex flex-col space-y-2">
-                            <button class="learn-flashcard-btn px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-md hover:from-blue-600 hover:to-cyan-600 transition duration-300 btn-gradient-hover" data-id="${set.id}">Học</button>
-                            <button class="delete-flashcard-set-btn px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-300 btn-gradient-hover" data-id="${set.id}">Xóa</button>
-                        </div>
-                    `;
-                    savedFlashcardGrid.appendChild(card);
-                });
-                // No need to attach individual event listeners here due to delegation
-            } else {
-                noSavedFlashcardsMessage.classList.remove('hidden');
-            }
-        }
-
-        function resetFlashcardDisplay() {
-            shuffledFlashcards = [];
-            currentFlashcardIndex = 0;
-            isFlipped = false;
-            activeFlashcardSetId = null;
-            flashcardDisplay.classList.add('hidden'); // Ensure it's hidden when resetting
-            // Reset wrapper classes and inline styles
-            flashcardContentWrapper.classList.remove('flashcard-slide-out-left', 'flashcard-slide-out-right', 'flashcard-zoom-in');
-            flashcardContentWrapper.style.transform = ''; // Clear any inline transform
-            flashcardContentWrapper.style.opacity = ''; // Clear any inline opacity
-            flashcardContentWrapper.style.transition = ''; // Restore default transition
-        }
-
-        function updateFlashcardDisplay() {
-            // Add robust check at the beginning
-            if (shuffledFlashcards.length === 0 || currentFlashcardIndex < 0 || currentFlashcardIndex >= shuffledFlashcards.length) {
-                console.error("Attempted to update flashcard display with invalid state. Index:", currentFlashcardIndex, "Array length:", shuffledFlashcards.length);
-                resetFlashcardDisplay(); // Ensure display is reset
-                showCustomAlert('Không tìm thấy thẻ flashcard hợp lệ. Vui lòng chọn bộ khác hoặc tạo bộ mới.');
-                return;
-            }
-
-            const currentCard = shuffledFlashcards[currentFlashcardIndex];
-            flashcardWord.textContent = currentCard.word;
-            flashcardMeaning.textContent = currentCard.meaning;
-            flashcardIPA.textContent = currentCard.ipa;
-            flashcardExample.textContent = `"${currentCard.example}"`;
-            flashcardCounter.textContent = `Thẻ ${currentFlashcardIndex + 1} / ${shuffledFlashcards.length}`;
-
-            // Set data-word for pronunciation button
-            flashcardPronounceBtn.dataset.word = currentCard.word;
-
-            // Always reset flip state to front face when updating content
-            flashcardInner.classList.remove('rotate-y-180');
-            isFlipped = false; 
-
-            prevFlashcardBtn.disabled = currentFlashcardIndex === 0;
-            nextFlashcardBtn.disabled = currentFlashcardIndex === shuffledFlashcards.length - 1;
-        }
-
-        flashcardContainer.addEventListener('click', (event) => {
-            // Only flip if click is not on the pronounce button
-            if (event.target !== flashcardPronounceBtn) {
-                isFlipped = !isFlipped;
-                if (isFlipped) {
-                    flashcardInner.classList.add('rotate-y-180');
+                if (editingFlashcardSetId) {
+                    const docRef = doc(db, `artifacts/${appId}/users/${userId}/flashcard_sets`, editingFlashcardSetId);
+                    await setDoc(docRef, flashcardSet);
+                    showCustomAlert(`Đã cập nhật thành công bộ flashcard: "${title}".`);
                 } else {
-                    flashcardInner.classList.remove('rotate-y-180');
+                    const collectionRef = collection(db, `artifacts/${appId}/users/${userId}/flashcard_sets`);
+                    await addDoc(collectionRef, flashcardSet);
+                    showCustomAlert(`Đã lưu thành công bộ flashcard: "${title}".`);
                 }
+                resetVocabForm();
+            } catch (e) {
+                console.error("Lỗi khi lưu/cập nhật tài liệu vào Firestore:", e);
+                showCustomAlert("Lỗi: Không thể lưu bộ flashcard.");
             }
-        });
+        }
 
-        flashcardPronounceBtn.addEventListener('click', (event) => {
-            event.stopPropagation(); // Prevent flashcard from flipping when pronounce button is clicked
-            const wordToSpeak = event.target.dataset.word;
-            speakWord(wordToSpeak);
-        });
+        function resetVocabForm() {
+            generatedVocabData = [];
+            vocabList.innerHTML = '';
+            noVocabMessage.classList.remove('hidden');
+            vocabActionButtons.classList.add('hidden');
+            vocabTopicInput.value = '';
+            editingFlashcardSetId = null;
+        }
 
-        // Helper function to handle flashcard transitions
-        function handleFlashcardTransition(direction) {
-            // Disable buttons during transition
-            prevFlashcardBtn.disabled = true;
-            nextFlashcardBtn.disabled = true;
+        async function editFlashcardSet(id) {
+            try {
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/flashcard_sets`, id);
+                const docSnap = await getDoc(docRef);
 
-            // Determine the new index BEFORE starting animations
-            let targetIndex = currentFlashcardIndex; // Use targetIndex to calculate, don't update currentFlashcardIndex yet
-            if (direction === 'next') {
-                targetIndex++;
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    editingFlashcardSetId = id;
+                    generatedVocabData = data.vocabularies;
+                    renderGeneratedVocab(generatedVocabData);
+                    vocabActionButtons.classList.remove('hidden');
+                    saveFlashcardsBtn.textContent = "Lưu thay đổi";
+                    switchTab('create');
+                } else {
+                    showCustomAlert("Không tìm thấy bộ flashcard này.");
+                }
+            } catch (e) {
+                console.error("Lỗi khi chỉnh sửa bộ flashcard:", e);
+                showCustomAlert("Lỗi: Không thể chỉnh sửa bộ flashcard.");
+            }
+        }
+
+        function renderFlashcardSets(sets) {
+            flashcardSetsContainer.innerHTML = '';
+            if (sets.length === 0) {
+                noFlashcardSetsMessage.classList.remove('hidden');
+                flashcardSetsContainer.appendChild(noFlashcardSetsMessage);
             } else {
-                targetIndex--;
-            }
+                noFlashcardSetsMessage.classList.add('hidden');
+                sets.forEach(set => {
+                    const setElement = document.createElement('div');
+                    setElement.className = `flashcard-set bg-gray-700 p-6 rounded-2xl shadow-lg flex flex-col justify-between transition-all duration-300 hover:bg-gray-600 ${set.level === 'B2' ? 'border-l-4 border-blue-500' : 'border-l-4 border-red-500'}`;
+                    setElement.innerHTML = `
+                        <div>
+                            <h4 class="text-xl font-bold text-white mb-2">${set.title}</h4>
+                            <p class="text-gray-400 text-sm">
+                                <span class="font-semibold">${set.level}</span>
+                                &bull; ${set.vocabularies.length} từ
+                            </p>
+                            <p class="text-gray-400 text-xs mt-1">Đã tạo: ${new Date(set.timestamp.seconds * 1000).toLocaleDateString()}</p>
+                        </div>
+                        <div class="flex flex-wrap justify-end gap-2 mt-4">
+                            <button class="view-btn text-sm px-3 py-1 rounded-full text-purple-400 hover:bg-purple-900 transition-colors">
+                                <i class="fa-solid fa-play mr-1"></i> Học
+                            </button>
+                            <button class="edit-btn text-sm px-3 py-1 rounded-full text-teal-400 hover:bg-teal-900 transition-colors">
+                                <i class="fa-solid fa-pen-to-square mr-1"></i> Chỉnh sửa
+                            </button>
+                            <button class="delete-btn text-sm px-3 py-1 rounded-full text-red-400 hover:bg-red-900 transition-colors">
+                                <i class="fa-solid fa-trash-can mr-1"></i> Xóa
+                            </button>
+                        </div>
+                    `;
+                    flashcardSetsContainer.appendChild(setElement);
 
-            // Check if the new index is valid before proceeding with animation
-            if (targetIndex < 0 || targetIndex >= shuffledFlashcards.length) {
-                // Re-enable buttons if transition is not possible
-                prevFlashcardBtn.disabled = currentFlashcardIndex === 0;
-                nextFlashcardBtn.disabled = currentFlashcardIndex === shuffledFlashcards.length - 1;
-                if (targetIndex < 0) {
-                    showCustomAlert('Bạn đang ở thẻ đầu tiên.');
-                } else { // targetIndex >= shuffledFlashcards.length
-                    showCustomAlert('Bạn đã hoàn thành bộ flashcard này!');
-                }
+                    setElement.querySelector('.view-btn').addEventListener('click', () => {
+                        currentFlashcardSet = set.vocabularies;
+                        currentCardIndex = 0;
+                        currentFlashcardSetTitle.textContent = set.title;
+                        showFlashcard(currentCardIndex);
+                        showSection('flashcardLearning');
+                    });
+                    setElement.querySelector('.edit-btn').addEventListener('click', () => editFlashcardSet(set.id));
+                    setElement.querySelector('.delete-btn').addEventListener('click', () => deleteFlashcardSet(set.id, set.title));
+                });
+            }
+        }
+
+        async function deleteFlashcardSet(id, title) {
+            try {
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/flashcard_sets`, id);
+                await deleteDoc(docRef);
+                showCustomAlert(`Đã xóa thành công bộ flashcard: "${title}".`);
+            } catch (e) {
+                console.error("Lỗi khi xóa tài liệu khỏi Firestore:", e);
+                showCustomAlert("Lỗi: Không thể xóa bộ flashcard.");
+            }
+        }
+
+        function showFlashcard(index) {
+            const card = currentFlashcardSet[index];
+            flashcardWord.textContent = card.word;
+            flashcardIpa.textContent = card.ipa;
+            backFlashcardWord.textContent = card.word;
+            backFlashcardIpa.textContent = card.ipa;
+            backFlashcardMeaning.textContent = card.meaning;
+            backFlashcardExample.innerHTML = card.example;
+            backFlashcardLevel.textContent = card.level;
+            backFlashcardLevel.className = `level-tag text-xs font-semibold px-2 py-0.5 rounded-full ${card.level === 'B2' ? 'b2-level' : 'c1-c2-level'}`;
+            flashcardCounter.textContent = `Thẻ ${index + 1} / ${currentFlashcardSet.length}`;
+            flashcardInner.classList.remove('rotate-y-180');
+            prevCardBtn.disabled = index === 0;
+            nextCardBtn.disabled = index === currentFlashcardSet.length - 1;
+        }
+
+        function flipFlashcard() {
+            flashcardInner.classList.toggle('rotate-y-180');
+        }
+
+        function navigateFlashcard(direction) {
+            flashcardInner.classList.remove('rotate-y-180');
+            const slideClass = direction === 'next' ? 'flashcard-slide-out-left' : 'flashcard-slide-out-right';
+            flashcardContentWrapper.classList.add(slideClass);
+
+            setTimeout(() => {
+                if (direction === 'next' && currentCardIndex < currentFlashcardSet.length - 1) currentCardIndex++;
+                else if (direction === 'prev' && currentCardIndex > 0) currentCardIndex--;
+                showFlashcard(currentCardIndex);
+                flashcardContentWrapper.classList.remove(slideClass);
+                flashcardContentWrapper.classList.add('pulse-once');
+                setTimeout(() => flashcardContentWrapper.classList.remove('pulse-once'), 300);
+            }, 300);
+        }
+        
+        // --- Document & Newsletter Functions ---
+        async function generateDocument() {
+            if (!db || !userId) {
+                showCustomAlert("Lỗi: Vui lòng đợi xác thực Firebase hoàn tất.");
                 return;
             }
 
-            // If currently flipped, flip back first
-            if (isFlipped) {
-                flashcardInner.classList.remove('rotate-y-180');
-                isFlipped = false; // Set state to front face
-                // Wait for the flip animation to complete before proceeding with slide/zoom
-                setTimeout(() => {
-                    // Now update the index and perform slide/zoom
-                    currentFlashcardIndex = targetIndex; // Update global index after flip
-                    performSlideAndZoom(direction);
-                }, 700); // Match flashcard-inner transition duration
-            } else {
-                // If not flipped, directly update index and perform slide/zoom
-                currentFlashcardIndex = targetIndex; // Update global index immediately
-                performSlideAndZoom(direction);
-            }
-        }
+            const documentType = documentTypeSelect.value;
+            const topic = documentTopicInput.value || "các tiến bộ công nghệ gần đây";
 
-        function performSlideAndZoom(direction) {
-            // Buttons are already disabled by handleFlashcardTransition
+            documentLoading.classList.remove('hidden');
+            documentError.classList.add('hidden');
+            noDocumentMessage.classList.add('hidden');
+            documentContent.innerHTML = '';
+            saveDocumentBtn.classList.add('hidden');
 
-            const slideOutClass = direction === 'next' ? 'flashcard-slide-out-left' : 'flashcard-slide-out-right';
+            const prompt = `Bạn là một chuyên gia ngôn ngữ. Hãy viết một ${documentType} bằng tiếng Anh khoảng 200 từ về chủ đề: "${topic}". Sử dụng từ vựng ở cấp độ B2 và C1/C2. Hãy đánh dấu các từ khóa quan trọng (B2, C1/C2) bằng cách bọc chúng trong một thẻ HTML có class "highlighted-word" và một data attribute "data-word" chứa từ gốc, ví dụ: "<span class='highlighted-word' data-word='word_here' data-level='B2/C1/C2'>word_here</span>". Hãy trả về toàn bộ nội dung bản tin trong một đối tượng JSON có thuộc tính "title" và "content_html" (đã chứa các thẻ HTML).`;
 
-            // 1. Start slide-out animation for current card
-            flashcardContentWrapper.classList.add(slideOutClass);
-            // Ensure any previous zoom-in class is removed to allow slide-out transition
-            flashcardContentWrapper.classList.remove('flashcard-zoom-in');
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: { "title": { "type": "STRING" }, "content_html": { "type": "STRING" } },
+                    }
+                }
+            };
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
-            // Wait for slide-out animation to complete
-            setTimeout(() => {
-                // 2. Update content for the new card
-                // Index is already updated in handleFlashcardTransition
-                updateFlashcardDisplay(); // This updates the text content and ensures flashcardInner is front-facing
-
-                // --- Crucial step for zoom from center ---
-                // Remove slide-out class
-                flashcardContentWrapper.classList.remove(slideOutClass);
-                
-                // Temporarily disable transitions on the wrapper to instantly reset its position and scale for the new card
-                flashcardContentWrapper.style.transition = 'none';
-                flashcardContentWrapper.style.transform = 'scale(0.8)'; // Set initial scale for zoom, and ensure translateX is 0
-                flashcardContentWrapper.style.opacity = '0'; // Set initial opacity for zoom
-
-                // Force reflow to ensure the new transform/opacity are applied immediately without transition
-                void flashcardContentWrapper.offsetWidth;
-
-                // Re-enable transitions for the zoom-in animation
-                flashcardContentWrapper.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
-
-                // 3. Start zoom-in animation
-                requestAnimationFrame(() => {
-                    // Add the class that triggers the transition to scale(1) and opacity(1)
-                    flashcardContentWrapper.classList.add('flashcard-zoom-in');
-                    
-                    // Re-enable buttons after zoom-in animation completes
-                    setTimeout(() => {
-                        prevFlashcardBtn.disabled = currentFlashcardIndex === 0;
-                        nextFlashcardBtn.disabled = currentFlashcardIndex === shuffledFlashcards.length - 1;
-                    }, 300); // Match 'flashcard-zoom-in' transition duration
+            try {
+                const response = await fetchWithExponentialBackoff(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
                 });
-            }, 300); // Match 'flashcard-slide-out' transition duration
+                const result = await response.json();
+                const jsonString = result.candidates[0].content.parts[0].text;
+                const parsedData = JSON.parse(jsonString);
+
+                if (parsedData.title && parsedData.content_html) {
+                    generatedDocumentData = parsedData;
+                    renderGeneratedDocument(parsedData);
+                    saveDocumentBtn.classList.remove('hidden');
+                } else {
+                    throw new Error("Không thể tạo tài liệu. Dữ liệu trả về không hợp lệ.");
+                }
+            } catch (error) {
+                console.error("Lỗi khi tạo tài liệu:", error);
+                documentError.textContent = "Lỗi khi tạo tài liệu: " + error.message;
+                documentError.classList.remove('hidden');
+                noDocumentMessage.classList.remove('hidden');
+            } finally {
+                documentLoading.classList.add('hidden');
+            }
         }
 
+        function renderGeneratedDocument(data) {
+            documentContent.innerHTML = data.content_html;
+            documentContent.querySelectorAll('.highlighted-word').forEach(wordElement => {
+                wordElement.classList.add(wordElement.dataset.level === 'B2' ? 'b2-level' : 'c1-c2-level');
+                wordElement.addEventListener('click', (event) => {
+                    const target = event.currentTarget;
+                    const word = target.dataset.word;
+                    const level = target.dataset.level;
+                    showWordPopup(word, level, target);
+                });
+            });
+        }
 
-        nextFlashcardBtn.addEventListener('click', () => {
-            if (currentFlashcardIndex < shuffledFlashcards.length - 1) {
-                handleFlashcardTransition('next');
+        async function saveDocument() {
+            if (!generatedDocumentData || !generatedDocumentData.title || !generatedDocumentData.content_html) {
+                showCustomAlert("Vui lòng tạo tài liệu trước khi lưu.");
+                return;
+            }
+
+            try {
+                const collectionRef = collection(db, `artifacts/${appId}/users/${userId}/documents`);
+                await addDoc(collectionRef, {
+                    title: generatedDocumentData.title,
+                    content: generatedDocumentData.content_html,
+                    timestamp: new Date()
+                });
+                showCustomAlert(`Đã lưu thành công tài liệu: "${generatedDocumentData.title}".`);
+                generatedDocumentData = {};
+                documentContent.innerHTML = `<p id="noDocumentMessage" class="text-gray-400 text-center py-10">Chưa có tài liệu nào được tạo.</p>`;
+                noDocumentMessage.classList.remove('hidden');
+                saveDocumentBtn.classList.add('hidden');
+            } catch (e) {
+                console.error("Lỗi khi thêm tài liệu vào Firestore:", e);
+                showCustomAlert("Lỗi: Không thể lưu tài liệu.");
+            }
+        }
+
+        function renderDocumentSets(sets) {
+            documentSetsContainer.innerHTML = '';
+            if (sets.length === 0) {
+                noDocumentSetsMessage.classList.remove('hidden');
+                documentSetsContainer.appendChild(noDocumentSetsMessage);
             } else {
-                showCustomAlert('Bạn đã hoàn thành bộ flashcard này!');
-            }
-        });
-
-        prevFlashcardBtn.addEventListener('click', () => {
-            if (currentFlashcardIndex > 0) {
-                handleFlashcardTransition('prev');
-            } else {
-                showCustomAlert('Bạn đang ở thẻ đầu tiên.');
-            }
-        });
-
-        // --- Newsletter Learning Functions (Card View) ---
-
-        // Function to delete a saved newsletter
-        function deleteNewsletter(nlId) {
-            savedNewsletters = savedNewsletters.filter(nl => nl.id !== nlId);
-            saveData('vocabBoostNewsletters', savedNewsletters);
-            renderSavedNewsletters(); // Re-render the grid
-            if (activeNewsletterId === nlId) {
-                resetNewsletterDisplay(); // Reset display if the active newsletter was deleted
-            }
-            showCustomAlert('Đã xóa bản tin.');
-        }
-
-        // Function to read a newsletter
-        function readNewsletter(nlId) {
-            const selectedNewsletter = savedNewsletters.find(s => s.id === nlId);
-            if (selectedNewsletter) {
-                activeNewsletterId = nlId; // Set the active newsletter
-                
-                // Ensure selectedNewsletterContent is visible
-                selectedNewsletterContent.classList.remove('hidden'); 
-                selectedNewsletterContent.innerHTML = selectedNewsletter.content;
-                noSelectedNewsletterContentMessage.classList.add('hidden');
-                
-                // Display newsletter title and icon
-                newsletterTitleDisplay.innerHTML = `${selectedNewsletter.icon} <span class="ml-2">${selectedNewsletter.name}</span>`;
-                newsletterTitleDisplay.classList.remove('hidden'); // Ensure title is visible
-
-                // Hide flashcard sections if they are visible
-                flashcardListContainer.classList.remove('is-visible');
-                flashcardListContainer.classList.add('hidden');
-                flashcardLearningArea.classList.remove('is-visible');
-                flashcardLearningArea.classList.add('hidden');
-
-                newsletterListContainer.classList.remove('is-visible');
-                newsletterListContainer.classList.add('hidden'); // Hide the list of newsletters immediately after transition starts
-                
-                setTimeout(() => {
-                    newsletterReadingArea.classList.remove('hidden');
-                    newsletterReadingArea.classList.add('is-visible'); // Show the reading area with transition
-                }, 500); // Delay matches transition duration
-            }
-        }
-
-        // Function to go back to the newsletter list
-        backToNewsletterListBtn.addEventListener('click', () => {
-            newsletterReadingArea.classList.remove('is-visible');
-            newsletterReadingArea.classList.add('hidden'); // Hide the reading area immediately after transition starts
-            
-            setTimeout(() => {
-                renderSavedFlashcards(); // Re-render flashcard list to ensure it's visible
-                renderSavedNewsletters(); // Re-render newsletter list
-                resetNewsletterDisplay(); // Reset display state
-            }, 500); // Delay matches transition duration
-        });
-
-        function renderSavedNewsletters() {
-            savedNewsletterGrid.innerHTML = ''; // Clear current grid
-            // Always ensure the list container is visible when this function is called
-            newsletterListContainer.classList.remove('hidden');
-            newsletterListContainer.classList.add('is-visible');
-            // Always ensure the reading area is hidden
-            newsletterReadingArea.classList.add('hidden');
-            newsletterReadingArea.classList.remove('is-visible');
-            newsletterTitleDisplay.classList.add('hidden'); // Hide title when showing list
-
-            if (savedNewsletters.length > 0) {
-                noSavedNewslettersMessage.classList.add('hidden');
-                savedNewsletters.forEach(nl => {
-                    const card = document.createElement('div');
-                    card.className = 'bg-gray-800 p-4 rounded-lg shadow-md flex flex-col justify-between';
-                    card.innerHTML = `
-                        <h4 class="text-xl font-semibold text-purple-300 mb-2 flex items-center">${nl.icon} <span class="ml-2">${nl.name}</span></h4>
-                        <div class="flex flex-col space-y-2">
-                            <button class="read-newsletter-btn px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-md hover:from-blue-600 hover:to-cyan-600 transition duration-300 btn-gradient-hover" data-id="${nl.id}">Đọc</button>
-                            <button class="delete-newsletter-btn px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-300 btn-gradient-hover" data-id="${nl.id}">Xóa</button>
+                noDocumentSetsMessage.classList.add('hidden');
+                sets.forEach(set => {
+                    const setElement = document.createElement('div');
+                    setElement.className = "document-set bg-gray-700 p-6 rounded-2xl shadow-lg flex flex-col justify-between transition-all duration-300 hover:bg-gray-600";
+                    setElement.innerHTML = `
+                        <div>
+                            <h4 class="text-xl font-bold text-white mb-2">${set.title}</h4>
+                            <p class="text-gray-400 text-xs mt-1">Đã tạo: ${new Date(set.timestamp.seconds * 1000).toLocaleDateString()}</p>
+                        </div>
+                        <div class="flex flex-wrap justify-end gap-2 mt-4">
+                            <button class="read-btn text-sm px-3 py-1 rounded-full text-purple-400 hover:bg-purple-900 transition-colors">
+                                <i class="fa-solid fa-book-open mr-1"></i> Đọc
+                            </button>
+                            <button class="delete-btn text-sm px-3 py-1 rounded-full text-red-400 hover:bg-red-900 transition-colors">
+                                <i class="fa-solid fa-trash-can mr-1"></i> Xóa
+                            </button>
                         </div>
                     `;
-                    savedNewsletterGrid.appendChild(card);
+                    documentSetsContainer.appendChild(setElement);
+
+                    setElement.querySelector('.read-btn').addEventListener('click', () => {
+                        currentDocumentTitle.textContent = set.title;
+                        readingDocumentContent.innerHTML = set.content;
+                        readingDocumentContent.querySelectorAll('.highlighted-word').forEach(wordElement => {
+                            wordElement.classList.add(wordElement.dataset.level === 'B2' ? 'b2-level' : 'c1-c2-level');
+                            wordElement.addEventListener('click', (event) => showWordPopup(wordElement.dataset.word, wordElement.dataset.level, wordElement));
+                        });
+                        showSection('documentReading');
+                    });
+                    setElement.querySelector('.delete-btn').addEventListener('click', () => deleteDocument(set.id, set.title));
                 });
-                // No need to attach individual event listeners here due to delegation
-            } else {
-                noSavedNewslettersMessage.classList.remove('hidden');
             }
         }
 
-        function resetNewsletterDisplay() {
-            activeNewsletterId = null;
-            selectedNewsletterContent.innerHTML = '';
-            selectedNewsletterContent.classList.add('hidden'); // Ensure it's hidden when resetting
-            noSelectedNewsletterContentMessage.classList.remove('hidden');
-            newsletterTitleDisplay.innerHTML = ''; // Clear title
-            newsletterTitleDisplay.classList.add('hidden'); // Hide title
+        async function deleteDocument(id, title) {
+            try {
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/documents`, id);
+                await deleteDoc(docRef);
+                showCustomAlert(`Đã xóa thành công tài liệu: "${title}".`);
+            } catch (e) {
+                console.error("Lỗi khi xóa tài liệu khỏi Firestore:", e);
+                showCustomAlert("Lỗi: Không thể xóa tài liệu.");
+            }
+        }
+        
+        async function showWordPopup(word, level, target) {
+            const popupContent = document.getElementById('popupContent');
+            popupContent.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xl font-bold">${word}</span>
+                        <span class="level-tag text-xs font-semibold px-2 py-0.5 rounded-full ${level === 'B2' ? 'b2-level' : 'c1-c2-level'}">${level}</span>
+                    </div>
+                    <button class="pronounce-word-popup text-purple-400 hover:text-purple-300 text-2xl transition-colors"><i class="fa-solid fa-volume-high"></i></button>
+                </div>
+                <div class="flex items-center gap-2 text-gray-300 text-sm mt-1">
+                    <span class="loading-spinner w-4 h-4 border-2"></span> Đang tải...
+                </div>
+            `;
+
+            wordPopup.classList.remove('is-visible', 'hidden');
+            const mainRect = document.querySelector('main').getBoundingClientRect();
+            const targetRect = target.getBoundingClientRect();
+            const popupWidth = 300;
+            const padding = 12;
+
+            let popupLeft = targetRect.left + (targetRect.width / 2) - (popupWidth / 2) - mainRect.left;
+            popupLeft = Math.max(padding, Math.min(popupLeft, mainRect.width - popupWidth - padding));
+
+            let popupTop = targetRect.bottom + padding - mainRect.top;
+            let spaceBelow = mainRect.height - (targetRect.bottom - mainRect.top);
+            if (spaceBelow < 250 && targetRect.top - mainRect.top > 250) {
+                popupTop = targetRect.top - 200 - padding - mainRect.top;
+            }
+            
+            wordPopup.style.left = `${popupLeft}px`;
+            wordPopup.style.top = `${popupTop}px`;
+
+            wordPopup.classList.remove('hidden');
+            setTimeout(() => wordPopup.classList.add('is-visible'), 10);
+            target.classList.add('pulse-once');
+            
+            const prompt = `Cung cấp nghĩa tiếng Việt, phiên âm IPA và một câu ví dụ tiếng Anh cho từ "${word}" ở cấp độ ${level}. Trả về một đối tượng JSON với các thuộc tính "ipa", "meaning" và "example".`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: { "ipa": { "type": "STRING" }, "meaning": { "type": "STRING" }, "example": { "type": "STRING" } },
+                    }
+                }
+            };
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetchWithExponentialBackoff(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                const jsonString = result.candidates[0].content.parts[0].text;
+                const data = JSON.parse(jsonString);
+
+                popupContent.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xl font-bold">${word}</span>
+                            <span class="level-tag text-xs font-semibold px-2 py-0.5 rounded-full ${level === 'B2' ? 'b2-level' : 'c1-c2-level'}">${level}</span>
+                        </div>
+                        <button class="pronounce-word-popup text-purple-400 hover:text-purple-300 text-2xl transition-colors"><i class="fa-solid fa-volume-high"></i></button>
+                    </div>
+                    <p class="text-gray-300 italic text-sm">${data.ipa}</p>
+                    <p class="text-gray-200"><strong>Nghĩa:</strong> ${data.meaning}</p>
+                    <p class="text-gray-400 text-sm italic"><strong>Ví dụ:</strong> ${data.example}</p>
+                `;
+
+                document.querySelector('.pronounce-word-popup').addEventListener('click', () => pronounceText(word));
+            } catch (error) {
+                console.error("Lỗi khi lấy thông tin từ vựng:", error);
+                popupContent.innerHTML = `<p class="text-red-300">Không thể lấy thông tin. Vui lòng thử lại.</p>`;
+            }
         }
 
-        // Function to handle word clicks (used by both newsletterContentDiv and selectedNewsletterContent)
-        function handleWordClick(event) {
-            const target = event.target;
-            // Ensure click is on the highlighted word itself
-            if (target.classList.contains('highlighted-word')) {
-                const meaning = target.dataset.meaning;
-                const ipa = target.dataset.ipa;
-                // Add fallback for partOfSpeech if it's empty or undefined
-                const partOfSpeech = target.dataset.partOfSpeech || '';
-                const wordToSpeak = target.textContent;
+        async function pronounceText(text) {
+            const payload = {
+                contents: [{ parts: [{ text: text }] }],
+                generationConfig: {
+                    responseModalities: ["AUDIO"],
+                    speechConfig: {
+                        voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } }
+                    }
+                },
+                model: "gemini-2.5-flash-preview-tts"
+            };
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
 
-                speakWord(wordToSpeak);
-
-                popupMeaning.textContent = meaning;
-                popupIPA.textContent = ipa;
-                // Only display partOfSpeech if it exists
-                popupPartOfSpeech.textContent = partOfSpeech ? `(${partOfSpeech})` : '';
-
-                wordPopup.classList.remove('hidden'); // Remove hidden first
-                requestAnimationFrame(() => {
-                    wordPopup.classList.add('is-visible'); // Then add is-visible to trigger transition
+            try {
+                const response = await fetchWithExponentialBackoff(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
                 });
-                
-                // Get dimensions after making it visible
-                const popupWidth = wordPopup.offsetWidth; 
-                const popupHeight = wordPopup.offsetHeight;
+                const result = await response.json();
+                const audioPart = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
 
-                const targetRect = target.getBoundingClientRect();
-                const mainRect = main.getBoundingClientRect();
+                if (audioPart) {
+                    const audioData = audioPart.inlineData.data;
+                    const mimeType = audioPart.inlineData.mimeType;
 
-                // Calculate horizontal position relative to the main content area
-                let popupLeft = (targetRect.left + (targetRect.width / 2)) - (popupWidth / 2) - mainRect.left;
-                
-                // Adjust for left boundary of main content area
-                if (popupLeft < 0) {
-                    popupLeft = 0;
-                }
-                // Adjust for right boundary of main content area
-                if (popupLeft + popupWidth > mainRect.width) {
-                    popupLeft = mainRect.width - popupWidth;
-                }
-
-                // Calculate vertical position relative to the main content area
-                let popupTop;
-                const padding = 5; // Padding between word and popup
-
-                // Check if there's enough space above the word (relative to viewport)
-                const spaceAboveViewport = targetRect.top - popupHeight - padding;
-                // Check if there's enough space below the word (relative to viewport)
-                const spaceBelowViewport = window.innerHeight - targetRect.bottom - popupHeight - padding;
-
-                if (spaceAboveViewport >= 0) { // Enough space above in viewport
-                    popupTop = targetRect.top - popupHeight - padding - mainRect.top;
-                } else if (spaceBelowViewport >= 0) { // Enough space below in viewport
-                    popupTop = targetRect.bottom + padding - mainRect.top;
-                } else { // Not enough space either way, prioritize placing below
-                    popupTop = targetRect.bottom + padding - mainRect.top;
-                    // Further adjust if it still goes off the bottom of mainRect
-                    if (popupTop + popupHeight > mainRect.height) {
-                        popupTop = mainRect.height - popupHeight;
+                    if (mimeType.startsWith("audio/L16")) {
+                        const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10);
+                        const pcmData = base64ToArrayBuffer(audioData);
+                        const pcm16 = new Int16Array(pcmData);
+                        const wavBlob = pcmToWav(pcm16, sampleRate);
+                        const audioUrl = URL.createObjectURL(wavBlob);
+                        const audio = new Audio(audioUrl);
+                        audio.play();
+                    } else {
+                        throw new Error("Unsupported audio format.");
                     }
-                    // If it still goes off the top of mainRect (e.g., mainRect is very short)
-                    if (popupTop < 0) {
-                        popupTop = 0;
+                } else {
+                    throw new Error("No audio data in the response.");
+                }
+            } catch (error) {
+                console.error("Lỗi khi phát âm:", error);
+            }
+        }
+
+        function base64ToArrayBuffer(base64) {
+            const binaryString = atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function pcmToWav(pcmData, sampleRate) {
+            const numChannels = 1;
+            const bitsPerSample = 16;
+            const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+            const blockAlign = numChannels * (bitsPerSample / 8);
+            const dataSize = pcmData.length * (bitsPerSample / 8);
+
+            const buffer = new ArrayBuffer(44 + dataSize);
+            const view = new DataView(buffer);
+            let offset = 0;
+
+            function writeString(str) {
+                for (let i = 0; i < str.length; i++) {
+                    view.setUint8(offset + i, str.charCodeAt(i));
+                }
+                offset += str.length;
+            }
+
+            writeString('RIFF');
+            view.setUint32(offset, 36 + dataSize, true);
+            offset += 4;
+            writeString('WAVE');
+            writeString('fmt ');
+            view.setUint32(offset, 16, true);
+            offset += 4;
+            view.setUint16(offset, 1, true);
+            offset += 2;
+            view.setUint16(offset, numChannels, true);
+            offset += 2;
+            view.setUint32(offset, sampleRate, true);
+            offset += 4;
+            view.setUint32(offset, byteRate, true);
+            offset += 4;
+            view.setUint16(offset, blockAlign, true);
+            offset += 2;
+            view.setUint16(offset, bitsPerSample, true);
+            offset += 2;
+            writeString('data');
+            view.setUint32(offset, dataSize, true);
+            offset += 4;
+
+            for (let i = 0; i < pcmData.length; i++) {
+                view.setInt16(offset, pcmData[i], true);
+                offset += 2;
+            }
+            return new Blob([view], { type: 'audio/wav' });
+        }
+        
+        async function fetchWithExponentialBackoff(url, options, retries = 3, delay = 1000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.status === 429) {
+                        if (i < retries - 1) {
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            delay *= 2;
+                            continue;
+                        } else {
+                            throw new Error('Too many requests, retries exhausted.');
+                        }
+                    }
+                    return response;
+                } catch (error) {
+                    console.error('Fetch attempt failed:', error);
+                    if (i < retries - 1) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2;
+                    } else {
+                        throw error;
                     }
                 }
-
-                // Apply positioning to the popup
-                wordPopup.style.left = `${popupLeft}px`;
-                wordPopup.style.top = `${popupTop}px`;
-                
-                target.classList.add('clicked-effect');
-                setTimeout(() => {
-                    target.classList.remove('clicked-effect');
-                }, 300);
-            } else {
-                wordPopup.classList.remove('is-visible');
-                setTimeout(() => {
-                    wordPopup.classList.add('hidden');
-                }, 200);
             }
         }
     </script>
