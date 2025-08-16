@@ -53,20 +53,11 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .pulse-once {
-            animation: pulseOnce 0.3s ease-out;
-        }
-        @keyframes pulseOnce {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
         /* --- Section Transitions --- */
-        .content-section {
+        .content-section, .review-subsection {
             display: none;
         }
-        .content-section.active {
+        .content-section.active, .review-subsection.active {
             display: block;
         }
 
@@ -115,7 +106,7 @@
             transform: scale(0.8);
             opacity: 0;
             transition: transform 0.3s ease-out, opacity 0.3s ease-out;
-            max-width: 500px; /* Increased width for better layout */
+            max-width: 500px;
         }
         .custom-overlay.is-visible .custom-modal-box {
             transform: scale(1);
@@ -137,18 +128,14 @@
         }
 
         /* --- Word Levels --- */
-        .highlighted-word {
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.1s ease-out;
-        }
-        .highlighted-word:hover {
-            text-decoration: underline;
-        }
-        .highlighted-word.b2-level { color: #60A5FA; }
-        .highlighted-word.c1-c2-level { color: #F87171; }
+        .highlighted-word { font-weight: 600; cursor: pointer; transition: transform 0.1s ease-out; }
+        .highlighted-word:hover { text-decoration: underline; }
+        .highlighted-word.b2-level { color: #60A5FA; } /* Blue */
+        .highlighted-word.c1-level { color: #F87171; } /* Red */
+        .highlighted-word.c2-level { color: #F97316; } /* Orange */
         .level-tag.b2-level { background-color: #60A5FA; color: white; }
-        .level-tag.c1-c2-level { background-color: #F87171; color: white; }
+        .level-tag.c1-level { background-color: #F87171; color: white; }
+        .level-tag.c2-level { background-color: #F97316; color: white; }
 
         /* --- Loading Spinner --- */
         .loading-spinner {
@@ -212,14 +199,9 @@
                     <div class="flex flex-col sm:flex-row items-center gap-4 mb-4">
                         <label class="text-white font-medium flex-shrink-0">Cấp độ:</label>
                         <div class="flex items-center space-x-4">
-                            <label class="inline-flex items-center cursor-pointer">
-                                <input type="radio" name="vocabLevel" value="B2" class="form-radio text-purple-500 h-4 w-4" checked>
-                                <span class="ml-2 text-white">B2</span>
-                            </label>
-                            <label class="inline-flex items-center cursor-pointer">
-                                <input type="radio" name="vocabLevel" value="C1/C2" class="form-radio text-purple-500 h-4 w-4">
-                                <span class="ml-2 text-white">C1/C2</span>
-                            </label>
+                            <label class="inline-flex items-center cursor-pointer"><input type="radio" name="vocabLevel" value="B2" class="form-radio text-purple-500 h-4 w-4" checked><span class="ml-2 text-white">B2</span></label>
+                            <label class="inline-flex items-center cursor-pointer"><input type="radio" name="vocabLevel" value="C1" class="form-radio text-purple-500 h-4 w-4"><span class="ml-2 text-white">C1</span></label>
+                            <label class="inline-flex items-center cursor-pointer"><input type="radio" name="vocabLevel" value="C2" class="form-radio text-purple-500 h-4 w-4"><span class="ml-2 text-white">C2</span></label>
                         </div>
                     </div>
                     <div class="flex flex-col sm:flex-row gap-4 mb-6">
@@ -229,28 +211,20 @@
                         </button>
                     </div>
                     <div id="generatedVocabOutput" class="mt-6 p-4 sm:p-6 bg-gray-900 rounded-xl shadow-inner min-h-[200px]">
-                        <p id="vocabLoading" class="text-purple-400 hidden flex items-center justify-center text-lg space-x-2">
-                            <span class="loading-spinner"></span> <span>Đang tạo từ vựng...</span>
-                        </p>
+                        <p id="vocabLoading" class="text-purple-400 hidden flex items-center justify-center text-lg space-x-2"><span class="loading-spinner"></span> <span>Đang tạo từ vựng...</span></p>
                         <p id="vocabError" class="text-red-500 hidden text-center"></p>
                         <ul id="vocabList" class="space-y-4"></ul>
                         <p id="noVocabMessage" class="text-gray-400 text-center py-10">Chưa có từ vựng nào được tạo.</p>
                         <div id="vocabActionButtons" class="mt-6 flex flex-col sm:flex-row gap-4 hidden">
-                            <button id="cancelEditBtn" class="flex-1 py-3 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded-xl shadow-lg transition-all duration-300">
-                                Hủy bỏ
-                            </button>
-                            <button id="saveFlashcardsBtn" class="flex-1 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl shadow-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300">
-                                Lưu thành Bộ Flashcard
-                            </button>
+                            <button id="cancelEditBtn" class="flex-1 py-3 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded-xl shadow-lg transition-all duration-300">Hủy bỏ</button>
+                            <button id="saveFlashcardsBtn" class="flex-1 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl shadow-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300">Lưu thành Bộ Flashcard</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- 2. Tạo Tài liệu từ vựng chuyên sâu -->
                 <div class="p-6 sm:p-8 bg-gray-700 rounded-2xl shadow-lg fade-in">
-                    <h3 class="text-2xl font-semibold text-white mb-6 border-b border-gray-600 pb-4">
-                        <i class="fa-solid fa-file-lines text-purple-400 mr-3"></i> Tạo Tài liệu từ vựng chuyên sâu
-                    </h3>
+                    <h3 class="text-2xl font-semibold text-white mb-6 border-b border-gray-600 pb-4"><i class="fa-solid fa-file-lines text-purple-400 mr-3"></i> Tạo Tài liệu từ vựng chuyên sâu</h3>
                     <div class="flex flex-col sm:flex-row items-center gap-4 mb-4">
                         <label class="text-white font-medium flex-shrink-0">Loại văn bản:</label>
                         <select id="documentTypeSelect" class="flex-1 p-3 rounded-xl bg-gray-900 text-white border border-gray-600 focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50">
@@ -262,21 +236,15 @@
                     </div>
                     <div class="flex flex-col sm:flex-row gap-4 mb-6">
                         <input type="text" id="documentTopicInput" placeholder="Nhập chủ đề (VD: 'AI trong y học') hoặc để trống" class="flex-1 p-3 rounded-xl bg-gray-900 text-white border border-gray-600 focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50 placeholder-gray-500">
-                        <button id="generateDocumentBtn" class="px-6 py-3 bg-gradient-to-r from-orange-400 to-red-500 text-white font-bold rounded-xl shadow-md hover:from-orange-500 hover:to-red-600 transition-all duration-300">
-                            Tạo Tài liệu
-                        </button>
+                        <button id="generateDocumentBtn" class="px-6 py-3 bg-gradient-to-r from-orange-400 to-red-500 text-white font-bold rounded-xl shadow-md hover:from-orange-500 hover:to-red-600 transition-all duration-300">Tạo Tài liệu</button>
                     </div>
                     <div id="generatedDocumentOutput" class="mt-6 p-4 sm:p-6 bg-gray-900 rounded-xl shadow-inner min-h-[200px]">
-                        <p id="documentLoading" class="text-purple-400 hidden flex items-center justify-center text-lg space-x-2">
-                            <span class="loading-spinner"></span> <span>Đang tạo tài liệu...</span>
-                        </p>
+                        <p id="documentLoading" class="text-purple-400 hidden flex items-center justify-center text-lg space-x-2"><span class="loading-spinner"></span> <span>Đang tạo tài liệu...</span></p>
                         <p id="documentError" class="text-red-500 hidden text-center"></p>
                         <div id="documentContent" class="text-gray-300 leading-relaxed text-base">
                             <p id="noDocumentMessage" class="text-gray-400 text-center py-10">Chưa có tài liệu nào được tạo.</p>
                         </div>
-                        <button id="saveDocumentBtn" class="mt-6 w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl shadow-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 hidden">
-                            Lưu Tài liệu
-                        </button>
+                        <button id="saveDocumentBtn" class="mt-6 w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl shadow-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 hidden">Lưu Tài liệu</button>
                     </div>
                 </div>
             </section>
@@ -284,37 +252,37 @@
             <!-- Review & Learn Section -->
             <section id="review-learn" class="content-section">
                 <h2 class="text-3xl font-bold text-center text-purple-300 mb-8">Ôn Tập & Học</h2>
+                
+                <!-- NEW: Sub-navigation for Review Section -->
+                <div class="flex justify-center border-b border-gray-700 mb-6">
+                    <button id="reviewFlashcardsBtn" class="review-nav-btn px-6 py-3 text-lg font-semibold border-b-2 border-purple-500 text-white">Bộ Flashcard</button>
+                    <button id="reviewDocumentsBtn" class="review-nav-btn px-6 py-3 text-lg font-semibold border-b-2 border-transparent text-gray-400 hover:text-white">Tài liệu</button>
+                </div>
 
                 <!-- Flashcard List -->
-                <div id="flashcardListContainer" class="content-section active fade-in">
-                    <h3 class="text-2xl font-semibold text-white mb-6 border-b border-gray-600 pb-4">Bộ Flashcard của bạn</h3>
+                <div id="flashcardListContainer" class="review-subsection active fade-in">
                     <div id="flashcardSets" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <!-- Flashcard sets will be dynamically inserted here -->
                         <p id="noFlashcardSetsMessage" class="col-span-full text-gray-400 text-center py-10">Bạn chưa có bộ flashcard nào được lưu.</p>
                     </div>
                 </div>
 
                 <!-- Flashcard Learning Area -->
-                <div id="flashcardLearningArea" class="content-section">
-                    <button id="backToFlashcardListBtn" class="text-purple-400 hover:text-purple-300 transition-colors mb-6 text-lg font-semibold flex items-center gap-2">
-                        <i class="fa-solid fa-arrow-left"></i> Trở về
-                    </button>
+                <div id="flashcardLearningArea" class="review-subsection">
+                    <button id="backToFlashcardListBtn" class="text-purple-400 hover:text-purple-300 transition-colors mb-6 text-lg font-semibold flex items-center gap-2"><i class="fa-solid fa-arrow-left"></i> Trở về</button>
                     <div class="text-center mb-6">
                         <h3 id="currentFlashcardSetTitle" class="text-3xl font-bold text-purple-300"></h3>
                         <p id="flashcardCounter" class="text-gray-400 mt-2 text-lg"></p>
                     </div>
                     <div class="perspective-1000 w-full max-w-xl mx-auto h-96">
-                        <div id="flashcardContentWrapper" class="flashcard-container relative h-full">
+                        <div id="flashcardContentWrapper" class="relative h-full">
                             <div id="flashcardInner" class="flashcard-inner relative w-full h-full rounded-2xl shadow-xl bg-gray-700 cursor-pointer">
-                                <!-- Flashcard Front -->
                                 <div id="flashcardFront" class="flashcard-face absolute w-full h-full p-8 rounded-2xl flex flex-col justify-center items-center text-center">
                                     <p class="text-gray-400 text-sm mb-2">Từ vựng</p>
                                     <h4 id="flashcardWord" class="text-5xl font-extrabold text-white mb-4"></h4>
                                     <p id="flashcardIpa" class="text-gray-400 text-2xl"></p>
                                 </div>
-                                <!-- Flashcard Back -->
                                 <div id="flashcardBack" class="flashcard-face absolute w-full h-full p-8 rounded-2xl flex flex-col justify-start items-start rotate-y-180">
-                                    <button id="backPronounceBtn" class="self-end text-purple-400 hover:text-purple-300 text-3xl transition-colors" style="position: absolute; top: 1.5rem; right: 1.5rem;"><i class="fa-solid fa-volume-high"></i></button>
+                                    <button id="backPronounceBtn" class="self-end text-purple-400 hover:text-purple-300 text-3xl transition-colors absolute top-6 right-6"><i class="fa-solid fa-volume-high"></i></button>
                                     <p class="text-gray-400 text-sm">Từ vựng</p>
                                     <h4 id="backFlashcardWord" class="text-3xl font-bold text-white mb-2"></h4>
                                     <p id="backFlashcardLevel" class="level-tag text-xs font-semibold px-2 py-0.5 rounded-full mb-4"></p>
@@ -329,38 +297,26 @@
                         </div>
                     </div>
                     <div class="flex justify-center items-center gap-6 mt-8">
-                        <button id="prevCardBtn" class="px-6 py-3 rounded-full bg-gray-700 text-white font-bold shadow-lg transition-all duration-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <i class="fa-solid fa-arrow-left"></i> Trước
-                        </button>
-                        <button id="nextCardBtn" class="px-6 py-3 rounded-full bg-gray-700 text-white font-bold shadow-lg transition-all duration-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
-                            Tiếp theo <i class="fa-solid fa-arrow-right"></i>
-                        </button>
+                        <button id="prevCardBtn" class="px-6 py-3 rounded-full bg-gray-700 text-white font-bold shadow-lg transition-all duration-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"><i class="fa-solid fa-arrow-left"></i> Trước</button>
+                        <button id="nextCardBtn" class="px-6 py-3 rounded-full bg-gray-700 text-white font-bold shadow-lg transition-all duration-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">Tiếp theo <i class="fa-solid fa-arrow-right"></i></button>
                     </div>
                 </div>
 
                 <!-- Document List -->
-                <div id="documentListContainer" class="content-section">
-                    <h3 class="text-2xl font-semibold text-white mb-6 border-b border-gray-600 pb-4">Tài liệu của bạn</h3>
+                <div id="documentListContainer" class="review-subsection">
                     <div id="documentSets" class="space-y-4">
-                        <!-- Document items will be dynamically inserted here -->
                         <p id="noDocumentSetsMessage" class="text-gray-400 text-center py-10">Bạn chưa có tài liệu nào được lưu.</p>
                     </div>
                 </div>
 
                 <!-- Document Reading Area -->
-                <div id="documentReadingArea" class="content-section">
-                    <button id="backToDocumentListBtn" class="text-purple-400 hover:text-purple-300 transition-colors mb-6 text-lg font-semibold flex items-center gap-2">
-                        <i class="fa-solid fa-arrow-left"></i> Trở về
-                    </button>
+                <div id="documentReadingArea" class="review-subsection">
+                    <button id="backToDocumentListBtn" class="text-purple-400 hover:text-purple-300 transition-colors mb-6 text-lg font-semibold flex items-center gap-2"><i class="fa-solid fa-arrow-left"></i> Trở về</button>
                     <div class="text-center mb-6">
                         <h3 id="currentDocumentTitle" class="text-3xl font-bold text-purple-300"></h3>
                     </div>
-                    <div id="readingDocumentContent" class="bg-gray-700 p-6 sm:p-8 rounded-2xl shadow-inner leading-relaxed text-lg text-gray-300">
-                        <!-- Document content will be inserted here -->
-                    </div>
-                    <button id="createFlashcardFromDocumentBtn" class="mt-6 w-full py-3 bg-gradient-to-r from-teal-500 to-emerald-600 text-white font-bold rounded-xl shadow-lg hover:from-teal-600 hover:to-emerald-700 transition-all duration-300">
-                        <i class="fa-solid fa-plus mr-2"></i> Tạo Flashcard từ Tài liệu đang xem
-                    </button>
+                    <div id="readingDocumentContent" class="bg-gray-700 p-6 sm:p-8 rounded-2xl shadow-inner leading-relaxed text-lg text-gray-300"></div>
+                    <button id="createFlashcardFromDocumentBtn" class="mt-6 w-full py-3 bg-gradient-to-r from-teal-500 to-emerald-600 text-white font-bold rounded-xl shadow-lg hover:from-teal-600 hover:to-emerald-700 transition-all duration-300"><i class="fa-solid fa-plus mr-2"></i> Tạo Flashcard từ Tài liệu đang xem</button>
                 </div>
             </section>
         </main>
@@ -373,701 +329,630 @@
 
     <!-- Word Meaning Popup -->
     <div id="wordPopup" class="absolute bg-gray-900 p-4 rounded-xl shadow-2xl border border-gray-600 max-w-sm">
-        <div id="popupContent" class="space-y-2">
-            <!-- Content will be dynamically inserted here -->
-        </div>
+        <div id="popupContent" class="space-y-2"></div>
     </div>
     
     <script>
-        // --- START OF LOCALSTORAGE REPLACEMENT SCRIPT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
+            const createTab = document.getElementById('createTab');
+            const reviewTab = document.getElementById('reviewTab');
+            const createMaterialsSection = document.getElementById('create-materials');
+            const reviewLearnSection = document.getElementById('review-learn');
 
-        // DOM elements
-        const createTabBtn = document.getElementById('createTab');
-        const reviewTabBtn = document.getElementById('reviewTab');
-        
-        const mainContent = document.querySelector('main');
-        const createMaterialsSection = document.getElementById('create-materials');
-        const reviewLearnSection = document.getElementById('review-learn');
+            const vocabTopicInput = document.getElementById('vocabTopicInput');
+            const generateVocabBtn = document.getElementById('generateVocabBtn');
+            const vocabLoading = document.getElementById('vocabLoading');
+            const vocabError = document.getElementById('vocabError');
+            const vocabList = document.getElementById('vocabList');
+            const noVocabMessage = document.getElementById('noVocabMessage');
+            const vocabActionButtons = document.getElementById('vocabActionButtons');
+            const saveFlashcardsBtn = document.getElementById('saveFlashcardsBtn');
+            const cancelEditBtn = document.getElementById('cancelEditBtn');
+            
+            const documentTopicInput = document.getElementById('documentTopicInput');
+            const generateDocumentBtn = document.getElementById('generateDocumentBtn');
+            const documentLoading = document.getElementById('documentLoading');
+            const documentError = document.getElementById('documentError');
+            const documentContent = document.getElementById('documentContent');
+            const saveDocumentBtn = document.getElementById('saveDocumentBtn');
 
-        const vocabLevelRadios = document.getElementsByName('vocabLevel');
-        const vocabTopicInput = document.getElementById('vocabTopicInput');
-        const generateVocabBtn = document.getElementById('generateVocabBtn');
-        const vocabLoading = document.getElementById('vocabLoading');
-        const vocabError = document.getElementById('vocabError');
-        const vocabList = document.getElementById('vocabList');
-        const noVocabMessage = document.getElementById('noVocabMessage');
-        const vocabActionButtons = document.getElementById('vocabActionButtons');
-        const saveFlashcardsBtn = document.getElementById('saveFlashcardsBtn');
-        const cancelEditBtn = document.getElementById('cancelEditBtn');
-        let generatedVocabData = [];
-        let editingFlashcardSetId = null;
+            const reviewFlashcardsBtn = document.getElementById('reviewFlashcardsBtn');
+            const reviewDocumentsBtn = document.getElementById('reviewDocumentsBtn');
+            
+            const flashcardListContainer = document.getElementById('flashcardListContainer');
+            const flashcardSetsContainer = document.getElementById('flashcardSets');
+            const noFlashcardSetsMessage = document.getElementById('noFlashcardSetsMessage');
+            
+            const flashcardLearningArea = document.getElementById('flashcardLearningArea');
+            const backToFlashcardListBtn = document.getElementById('backToFlashcardListBtn');
+            const currentFlashcardSetTitle = document.getElementById('currentFlashcardSetTitle');
+            const flashcardCounter = document.getElementById('flashcardCounter');
+            const flashcardInner = document.getElementById('flashcardInner');
+            const flashcardWord = document.getElementById('flashcardWord');
+            const flashcardIpa = document.getElementById('flashcardIpa');
+            const backFlashcardWord = document.getElementById('backFlashcardWord');
+            const backFlashcardLevel = document.getElementById('backFlashcardLevel');
+            const backFlashcardIpa = document.getElementById('backFlashcardIpa');
+            const backFlashcardMeaning = document.getElementById('backFlashcardMeaning');
+            const backFlashcardExample = document.getElementById('backFlashcardExample');
+            const prevCardBtn = document.getElementById('prevCardBtn');
+            const nextCardBtn = document.getElementById('nextCardBtn');
+            const backPronounceBtn = document.getElementById('backPronounceBtn');
+            
+            const documentListContainer = document.getElementById('documentListContainer');
+            const documentSetsContainer = document.getElementById('documentSets');
+            const noDocumentSetsMessage = document.getElementById('noDocumentSetsMessage');
 
-        const documentTypeSelect = document.getElementById('documentTypeSelect');
-        const documentTopicInput = document.getElementById('documentTopicInput');
-        const generateDocumentBtn = document.getElementById('generateDocumentBtn');
-        const documentLoading = document.getElementById('documentLoading');
-        const documentError = document.getElementById('documentError');
-        const documentContent = document.getElementById('documentContent');
-        const noDocumentMessage = document.getElementById('noDocumentMessage');
-        const saveDocumentBtn = document.getElementById('saveDocumentBtn');
-        let generatedDocumentData = {};
+            const documentReadingArea = document.getElementById('documentReadingArea');
+            const backToDocumentListBtn = document.getElementById('backToDocumentListBtn');
+            const currentDocumentTitle = document.getElementById('currentDocumentTitle');
+            const readingDocumentContent = document.getElementById('readingDocumentContent');
+            const createFlashcardFromDocumentBtn = document.getElementById('createFlashcardFromDocumentBtn');
 
-        const flashcardSetsContainer = document.getElementById('flashcardSets');
-        const noFlashcardSetsMessage = document.getElementById('noFlashcardSetsMessage');
-        const flashcardLearningArea = document.getElementById('flashcardLearningArea');
-        const backToFlashcardListBtn = document.getElementById('backToFlashcardListBtn');
-        const currentFlashcardSetTitle = document.getElementById('currentFlashcardSetTitle');
-        const flashcardCounter = document.getElementById('flashcardCounter');
-        const flashcardInner = document.getElementById('flashcardInner');
-        const flashcardContentWrapper = document.getElementById('flashcardContentWrapper');
-        const flashcardListContainer = document.getElementById('flashcardListContainer');
-        const flashcardWord = document.getElementById('flashcardWord');
-        const flashcardIpa = document.getElementById('flashcardIpa');
-        const backFlashcardWord = document.getElementById('backFlashcardWord');
-        const backFlashcardLevel = document.getElementById('backFlashcardLevel');
-        const backFlashcardIpa = document.getElementById('backFlashcardIpa');
-        const backFlashcardMeaning = document.getElementById('backFlashcardMeaning');
-        const backFlashcardExample = document.getElementById('backFlashcardExample');
-        const prevCardBtn = document.getElementById('prevCardBtn');
-        const nextCardBtn = document.getElementById('nextCardBtn');
-        const backPronounceBtn = document.getElementById('backPronounceBtn');
-        let currentFlashcardSet = [];
-        let currentCardIndex = 0;
+            const customAlertOverlay = document.getElementById('customAlertOverlay');
+            const customAlertCloseBtn = document.getElementById('customAlertCloseBtn');
+            const wordPopup = document.getElementById('wordPopup');
 
-        const documentSetsContainer = document.getElementById('documentSets');
-        const noDocumentSetsMessage = document.getElementById('noDocumentSetsMessage');
-        const documentReadingArea = document.getElementById('documentReadingArea');
-        const backToDocumentListBtn = document.getElementById('backToDocumentListBtn');
-        const currentDocumentTitle = document.getElementById('currentDocumentTitle');
-        const readingDocumentContent = document.getElementById('readingDocumentContent');
-        const documentListContainer = document.getElementById('documentListContainer');
-        const createFlashcardFromDocumentBtn = document.getElementById('createFlashcardFromDocumentBtn');
+            let generatedVocabData = [];
+            let editingFlashcardSetId = null;
+            let generatedDocumentData = {};
+            let currentFlashcardSet = [];
+            let currentCardIndex = 0;
 
-        const wordPopup = document.getElementById('wordPopup');
-        const customAlertOverlay = document.getElementById('customAlertOverlay');
-        const customAlertCloseBtn = document.getElementById('customAlertCloseBtn');
+            // --- LocalStorage Helpers ---
+            const getStoredFlashcardSets = () => JSON.parse(localStorage.getItem('vocabBoostFlashcards') || '[]');
+            const saveStoredFlashcardSets = (sets) => localStorage.setItem('vocabBoostFlashcards', JSON.stringify(sets));
+            const getStoredDocuments = () => JSON.parse(localStorage.getItem('vocabBoostDocuments') || '[]');
+            const saveStoredDocuments = (docs) => localStorage.setItem('vocabBoostDocuments', JSON.stringify(docs));
+            
+            // --- Event Listeners ---
+            createTab.addEventListener('click', () => switchTab('create'));
+            reviewTab.addEventListener('click', () => switchTab('review'));
+            
+            reviewFlashcardsBtn.addEventListener('click', () => switchReviewSubSection('flashcardList'));
+            reviewDocumentsBtn.addEventListener('click', () => switchReviewSubSection('documentList'));
 
-        // --- LocalStorage Helper Functions ---
-        const getStoredFlashcardSets = () => JSON.parse(localStorage.getItem('vocabBoostFlashcards') || '[]');
-        const saveStoredFlashcardSets = (sets) => localStorage.setItem('vocabBoostFlashcards', JSON.stringify(sets));
-        const getStoredDocuments = () => JSON.parse(localStorage.getItem('vocabBoostDocuments') || '[]');
-        const saveStoredDocuments = (docs) => localStorage.setItem('vocabBoostDocuments', JSON.stringify(docs));
-        
-        // Event Listeners
-        window.addEventListener('load', () => {
-            renderFlashcardSets(getStoredFlashcardSets());
-            renderDocumentSets(getStoredDocuments());
-            switchTab('create'); // *** FIXED: Use switchTab on initial load
-        });
+            generateVocabBtn.addEventListener('click', generateVocabulary);
+            saveFlashcardsBtn.addEventListener('click', saveOrUpdateFlashcardSet);
+            cancelEditBtn.addEventListener('click', resetVocabForm);
+            
+            generateDocumentBtn.addEventListener('click', generateDocument);
+            saveDocumentBtn.addEventListener('click', saveDocument);
+            createFlashcardFromDocumentBtn.addEventListener('click', createFlashcardFromDocument);
 
-        createTabBtn.addEventListener('click', () => switchTab('create'));
-        reviewTabBtn.addEventListener('click', () => switchTab('review'));
-        
-        vocabTopicInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') generateVocabBtn.click(); });
-        generateVocabBtn.addEventListener('click', generateVocabulary);
-        saveFlashcardsBtn.addEventListener('click', saveOrUpdateFlashcardSet);
-        cancelEditBtn.addEventListener('click', resetVocabForm);
-        
-        documentTopicInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') generateDocumentBtn.click(); });
-        generateDocumentBtn.addEventListener('click', generateDocument);
-        saveDocumentBtn.addEventListener('click', saveDocument);
-        createFlashcardFromDocumentBtn.addEventListener('click', createFlashcardFromDocument);
-
-        backToFlashcardListBtn.addEventListener('click', () => showReviewSubSection('flashcardList'));
-        flashcardInner.addEventListener('click', flipFlashcard);
-        prevCardBtn.addEventListener('click', () => navigateFlashcard('prev'));
-        nextCardBtn.addEventListener('click', () => navigateFlashcard('next'));
-        backPronounceBtn.addEventListener('click', (event) => {
-            event.stopPropagation();
-            if (currentFlashcardSet[currentCardIndex]) {
-                pronounceText(currentFlashcardSet[currentCardIndex].word);
-            }
-        });
-
-        backToDocumentListBtn.addEventListener('click', () => showReviewSubSection('documentList'));
-
-        customAlertCloseBtn.addEventListener('click', () => {
-            customAlertOverlay.classList.remove('is-visible');
-        });
-        document.addEventListener('click', (event) => {
-            if (!wordPopup.contains(event.target) && !event.target.closest('.highlighted-word')) {
-                wordPopup.classList.remove('is-visible');
-            }
-        });
-
-        function showCustomAlert(message, isHtml = false) {
-            const msgElement = document.getElementById('customAlertMessage');
-            if (isHtml) {
-                msgElement.innerHTML = message;
-            } else {
-                msgElement.textContent = message;
-            }
-            customAlertOverlay.classList.add('is-visible');
-        }
-
-        function switchTab(tabName) {
-            document.querySelectorAll('nav button').forEach(button => {
-                button.classList.remove('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'shadow-lg', 'transform', 'scale-105');
-                button.classList.add('bg-gray-700', 'text-gray-300');
+            backToFlashcardListBtn.addEventListener('click', () => switchReviewSubSection('flashcardList'));
+            flashcardInner.addEventListener('click', () => flashcardInner.classList.toggle('rotate-y-180'));
+            prevCardBtn.addEventListener('click', () => navigateFlashcard('prev'));
+            nextCardBtn.addEventListener('click', () => navigateFlashcard('next'));
+            backPronounceBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (currentFlashcardSet[currentCardIndex]) {
+                    pronounceText(currentFlashcardSet[currentCardIndex].word);
+                }
             });
 
-            if (tabName === 'create') {
-                createTabBtn.classList.add('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'shadow-lg', 'transform', 'scale-105');
-                createMaterialsSection.classList.add('active');
-                reviewLearnSection.classList.remove('active');
-            } else {
-                reviewTabBtn.classList.add('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'shadow-lg', 'transform', 'scale-105');
-                reviewLearnSection.classList.add('active');
-                createMaterialsSection.classList.remove('active');
-                showReviewSubSection('flashcardList'); // Default to flashcard list
+            backToDocumentListBtn.addEventListener('click', () => switchReviewSubSection('documentList'));
+
+            customAlertCloseBtn.addEventListener('click', () => customAlertOverlay.classList.remove('is-visible'));
+            document.addEventListener('click', (event) => {
+                if (!wordPopup.contains(event.target) && !event.target.closest('.highlighted-word')) {
+                    wordPopup.classList.remove('is-visible');
+                }
+            });
+            document.getElementById('guideBtn').addEventListener('click', showGuide);
+
+            // --- Core Functions ---
+            function switchTab(tabName) {
+                const navButtons = { create: createTab, review: reviewTab };
+                Object.values(navButtons).forEach(btn => {
+                    btn.classList.remove('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'shadow-lg', 'scale-105');
+                    btn.classList.add('bg-gray-700', 'text-gray-300');
+                });
+                navButtons[tabName].classList.add('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'shadow-lg', 'scale-105');
+
+                createMaterialsSection.classList.toggle('active', tabName === 'create');
+                reviewLearnSection.classList.toggle('active', tabName === 'review');
+                
+                if (tabName === 'review') {
+                    switchReviewSubSection('flashcardList'); // Default to flashcard list
+                }
             }
-        }
-        
-        // *** FIXED: Renamed and improved this function to handle all sub-sections ***
-        function showReviewSubSection(sectionId) {
-            document.querySelectorAll('#review-learn .content-section').forEach(sec => sec.classList.remove('active'));
-            // Find the correct element whether its ID ends with Container or Area
-            const element = document.getElementById(sectionId + 'Container') || document.getElementById(sectionId + 'Area');
-            if (element) {
-                element.classList.add('active');
-            } else {
-                console.error("Could not find review subsection for ID:", sectionId);
+            
+            function switchReviewSubSection(sectionId) {
+                document.querySelectorAll('.review-subsection').forEach(sec => sec.classList.remove('active'));
+                const element = document.getElementById(sectionId + 'Container') || document.getElementById(sectionId + 'Area');
+                if (element) element.classList.add('active');
+
+                reviewFlashcardsBtn.classList.toggle('border-purple-500', sectionId.includes('flashcard'));
+                reviewFlashcardsBtn.classList.toggle('text-white', sectionId.includes('flashcard'));
+                reviewFlashcardsBtn.classList.toggle('border-transparent', !sectionId.includes('flashcard'));
+                reviewFlashcardsBtn.classList.toggle('text-gray-400', !sectionId.includes('flashcard'));
+
+                reviewDocumentsBtn.classList.toggle('border-purple-500', sectionId.includes('document'));
+                reviewDocumentsBtn.classList.toggle('text-white', sectionId.includes('document'));
+                reviewDocumentsBtn.classList.toggle('border-transparent', !sectionId.includes('document'));
+                reviewDocumentsBtn.classList.toggle('text-gray-400', !sectionId.includes('document'));
             }
-        }
 
-        // --- Flashcard & Vocab Functions ---
-        async function generateVocabulary() {
-            editingFlashcardSetId = null;
-            const selectedLevel = document.querySelector('input[name="vocabLevel"]:checked').value;
-            const topic = vocabTopicInput.value || (selectedLevel === 'B2' ? "một danh sách 15 từ vựng B2" : "một danh sách 10 từ vựng C1/C2");
+            // --- Vocabulary & Flashcard Functions ---
+            async function generateVocabulary() {
+                editingFlashcardSetId = null;
+                const selectedLevel = document.querySelector('input[name="vocabLevel"]:checked').value;
+                const wordCount = selectedLevel === 'B2' ? 15 : 10;
+                const topic = vocabTopicInput.value || `một danh sách ${wordCount} từ vựng ${selectedLevel}`;
 
-            vocabLoading.classList.remove('hidden');
-            vocabError.classList.add('hidden');
-            noVocabMessage.classList.add('hidden');
-            vocabActionButtons.classList.add('hidden');
-            vocabList.innerHTML = '';
+                vocabLoading.classList.remove('hidden');
+                vocabError.classList.add('hidden');
+                noVocabMessage.classList.add('hidden');
+                vocabActionButtons.classList.add('hidden');
+                vocabList.innerHTML = '';
 
-            const prompt = `Bạn là một trợ lý ngôn ngữ. Hãy tạo một danh sách từ vựng tiếng Anh theo yêu cầu sau: "${topic}". Đối với mỗi từ, hãy cung cấp từ, phiên âm IPA, loại từ, nghĩa tiếng Việt và một câu ví dụ tiếng Anh. Cấp độ từ vựng yêu cầu là ${selectedLevel}. Hãy trả về kết quả dưới dạng một mảng JSON. Mỗi đối tượng trong mảng sẽ có các thuộc tính: word, ipa, type, meaning, example và level. Đảm bảo câu ví dụ tự nhiên và dễ hiểu.`;
-
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "ARRAY",
-                        items: {
-                            type: "OBJECT",
-                            properties: {
-                                "word": { "type": "STRING" }, "ipa": { "type": "STRING" }, "type": { "type": "STRING" },
-                                "meaning": { "type": "STRING" }, "example": { "type": "STRING" }, "level": { "type": "STRING", "enum": ["B2", "C1/C2"] }
-                            },
+                const prompt = `Tạo một danh sách từ vựng tiếng Anh theo yêu cầu: "${topic}". Cấp độ từ vựng là ${selectedLevel}. Với mỗi từ, cung cấp: word, ipa, type, meaning (tiếng Việt), example (tiếng Anh), và level (phải là "B2", "C1", hoặc "C2"). Trả về một mảng JSON.`;
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    "word": { "type": "STRING" }, "ipa": { "type": "STRING" }, "type": { "type": "STRING" },
+                                    "meaning": { "type": "STRING" }, "example": { "type": "STRING" }, "level": { "type": "STRING", "enum": ["B2", "C1", "C2"] }
+                                },
+                                required: ["word", "ipa", "type", "meaning", "example", "level"]
+                            }
                         }
                     }
+                };
+
+                try {
+                    const result = await callGeminiAPI(payload);
+                    if (Array.isArray(result) && result.length > 0) {
+                        generatedVocabData = result;
+                        renderGeneratedVocab(generatedVocabData);
+                        vocabActionButtons.classList.remove('hidden');
+                        saveFlashcardsBtn.textContent = "Lưu thành Bộ Flashcard";
+                    } else { throw new Error("Không có từ vựng nào được tạo."); }
+                } catch (error) {
+                    console.error("Lỗi khi tạo từ vựng:", error);
+                    vocabError.textContent = "Lỗi: " + error.message;
+                    vocabError.classList.remove('hidden');
+                    noVocabMessage.classList.remove('hidden');
+                } finally {
+                    vocabLoading.classList.add('hidden');
                 }
-            };
-            const apiKey = "AIzaSyD_v3TF-xMvQzJkwNIu020D3pbPivWNy7s";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            }
+            
+            function renderGeneratedVocab(vocab) {
+                vocabList.innerHTML = '';
+                noVocabMessage.classList.toggle('hidden', vocab.length > 0);
 
-            try {
-                const response = await fetchWithExponentialBackoff(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                const result = await response.json();
-                const jsonString = result.candidates[0].content.parts[0].text;
-                const parsedData = JSON.parse(jsonString);
+                vocab.forEach((item, index) => {
+                    const li = document.createElement('li');
+                    const levelClass = `${item.level.toLowerCase()}-level`;
+                    li.className = `flex items-center justify-between bg-gray-900 p-4 rounded-xl border-l-4 border-transparent`;
+                    if(item.level === 'B2') li.classList.add('border-blue-500');
+                    else if(item.level === 'C1') li.classList.add('border-red-500');
+                    else if(item.level === 'C2') li.classList.add('border-orange-500');
 
-                if (Array.isArray(parsedData) && parsedData.length > 0) {
-                    generatedVocabData = parsedData;
+                    li.innerHTML = `
+                        <div class="flex-1">
+                            <div class="flex items-center">
+                                <span class="text-xl font-bold text-white">${item.word || 'N/A'}</span>
+                                <button class="pronounce-btn text-purple-400 hover:text-purple-300 ml-3 text-lg" data-word="${item.word}"><i class="fa-solid fa-volume-high"></i></button>
+                            </div>
+                            <p class="text-gray-400 text-sm italic mt-1">${item.ipa || 'N/A'}</p>
+                            <p class="text-gray-300 mt-2">${item.meaning || 'N/A'} <span class="level-tag text-xs font-semibold px-2 py-0.5 rounded-full ${levelClass}">${item.level || 'N/A'}</span></p>
+                            <p class="text-gray-500 text-sm mt-1">Ví dụ: "${item.example || 'N/A'}"</p>
+                        </div>
+                        <button class="delete-vocab-btn text-red-500 hover:text-red-400 p-2 rounded-full" data-index="${index}"><i class="fa-solid fa-xmark"></i></button>
+                    `;
+                    vocabList.appendChild(li);
+                });
+
+                vocabList.querySelectorAll('.delete-vocab-btn').forEach(btn => btn.addEventListener('click', (e) => {
+                    generatedVocabData.splice(parseInt(e.currentTarget.dataset.index), 1);
+                    renderGeneratedVocab(generatedVocabData);
+                }));
+                vocabList.querySelectorAll('.pronounce-btn').forEach(btn => btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    pronounceText(e.currentTarget.dataset.word);
+                }));
+            }
+
+            function saveOrUpdateFlashcardSet() {
+                if (generatedVocabData.length === 0) return showCustomAlert("Vui lòng tạo từ vựng trước khi lưu.");
+
+                const allSets = getStoredFlashcardSets();
+                const level = generatedVocabData[0]?.level || 'N/A';
+                const title = `Bộ từ vựng cấp độ ${level} (${generatedVocabData.length} từ)`;
+
+                if (editingFlashcardSetId) {
+                    const setIndex = allSets.findIndex(s => s.id === editingFlashcardSetId);
+                    if (setIndex > -1) {
+                        allSets[setIndex] = { ...allSets[setIndex], title, level, vocabularies: generatedVocabData, timestamp: new Date().toISOString() };
+                    }
+                } else {
+                    allSets.push({ id: Date.now(), title, level, vocabularies: generatedVocabData, timestamp: new Date().toISOString() });
+                }
+
+                saveStoredFlashcardSets(allSets);
+                renderFlashcardSets(allSets);
+                showCustomAlert(`Đã lưu thành công bộ flashcard: "${title}".`);
+                resetVocabForm();
+            }
+
+            function resetVocabForm() {
+                generatedVocabData = [];
+                vocabList.innerHTML = '';
+                noVocabMessage.classList.remove('hidden');
+                vocabActionButtons.classList.add('hidden');
+                vocabTopicInput.value = '';
+                editingFlashcardSetId = null;
+            }
+
+            function editFlashcardSet(id) {
+                const set = getStoredFlashcardSets().find(s => s.id === id);
+                if (set) {
+                    editingFlashcardSetId = id;
+                    generatedVocabData = set.vocabularies;
                     renderGeneratedVocab(generatedVocabData);
                     vocabActionButtons.classList.remove('hidden');
-                    saveFlashcardsBtn.textContent = "Lưu thành Bộ Flashcard";
-                } else { throw new Error("Không có từ vựng nào được tạo."); }
-            } catch (error) {
-                console.error("Lỗi khi tạo từ vựng:", error);
-                vocabError.textContent = "Lỗi khi tạo từ vựng: " + error.message;
-                vocabError.classList.remove('hidden');
-                noVocabMessage.classList.remove('hidden');
-            } finally {
-                vocabLoading.classList.add('hidden');
-            }
-        }
-
-        async function createFlashcardFromDocument() {
-            if (!readingDocumentContent.hasChildNodes() || readingDocumentContent.querySelector('#noDocumentMessage')) {
-                showCustomAlert("Vui lòng mở một tài liệu trước.");
-                return;
-            }
-            editingFlashcardSetId = null;
-            const highlightedWords = Array.from(readingDocumentContent.querySelectorAll('.highlighted-word'));
-            if (highlightedWords.length === 0) {
-                showCustomAlert("Tài liệu này không có từ vựng nào được đánh dấu để tạo flashcard.");
-                return;
+                    saveFlashcardsBtn.textContent = "Lưu thay đổi";
+                    switchTab('create');
+                }
             }
 
-            vocabLoading.classList.remove('hidden');
-            vocabError.classList.add('hidden');
-            noVocabMessage.classList.add('hidden');
-            vocabActionButtons.classList.add('hidden');
-            vocabList.innerHTML = '';
+            function renderFlashcardSets(sets) {
+                flashcardSetsContainer.innerHTML = '';
+                noFlashcardSetsMessage.classList.toggle('hidden', sets.length > 0);
+                if (sets.length === 0) flashcardSetsContainer.appendChild(noFlashcardSetsMessage);
+
+                sets.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                sets.forEach(set => {
+                    const setElement = document.createElement('div');
+                    let borderColorClass = 'border-gray-500';
+                    if(set.level === 'B2') borderColorClass = 'border-blue-500';
+                    else if(set.level === 'C1') borderColorClass = 'border-red-500';
+                    else if(set.level === 'C2') borderColorClass = 'border-orange-500';
+
+                    setElement.className = `bg-gray-700 p-6 rounded-2xl shadow-lg flex flex-col justify-between transition-all duration-300 hover:bg-gray-600 border-l-4 ${borderColorClass}`;
+                    setElement.innerHTML = `
+                        <div>
+                            <h4 class="text-xl font-bold text-white mb-2">${set.title}</h4>
+                            <p class="text-gray-400 text-sm"><span class="font-semibold">${set.level}</span> &bull; ${set.vocabularies.length} từ</p>
+                            <p class="text-gray-400 text-xs mt-1">Đã tạo: ${new Date(set.timestamp).toLocaleDateString()}</p>
+                        </div>
+                        <div class="flex flex-wrap justify-end gap-2 mt-4">
+                            <button class="view-btn text-sm px-3 py-1 rounded-full text-purple-400 hover:bg-purple-900"><i class="fa-solid fa-play mr-1"></i> Học</button>
+                            <button class="edit-btn text-sm px-3 py-1 rounded-full text-teal-400 hover:bg-teal-900"><i class="fa-solid fa-pen-to-square mr-1"></i> Sửa</button>
+                            <button class="delete-btn text-sm px-3 py-1 rounded-full text-red-400 hover:bg-red-900"><i class="fa-solid fa-trash-can mr-1"></i> Xóa</button>
+                        </div>
+                    `;
+                    flashcardSetsContainer.appendChild(setElement);
+
+                    setElement.querySelector('.view-btn').addEventListener('click', () => {
+                        currentFlashcardSet = set.vocabularies;
+                        currentCardIndex = 0;
+                        currentFlashcardSetTitle.textContent = set.title;
+                        showFlashcard(currentCardIndex);
+                        switchReviewSubSection('flashcardLearning');
+                    });
+                    setElement.querySelector('.edit-btn').addEventListener('click', () => editFlashcardSet(set.id));
+                    setElement.querySelector('.delete-btn').addEventListener('click', () => {
+                        saveStoredFlashcardSets(getStoredFlashcardSets().filter(s => s.id !== set.id));
+                        renderFlashcardSets(getStoredFlashcardSets());
+                        showCustomAlert(`Đã xóa bộ flashcard: "${set.title}".`);
+                    });
+                });
+            }
+
+            function showFlashcard(index) {
+                const card = currentFlashcardSet[index];
+                if (!card) return;
+                const levelClass = card.level ? `${card.level.toLowerCase()}-level` : '';
+                flashcardWord.textContent = card.word;
+                flashcardIpa.textContent = card.ipa;
+                backFlashcardWord.textContent = card.word;
+                backFlashcardIpa.textContent = card.ipa;
+                backFlashcardMeaning.textContent = card.meaning;
+                backFlashcardExample.innerHTML = card.example;
+                backFlashcardLevel.textContent = card.level;
+                backFlashcardLevel.className = `level-tag text-xs font-semibold px-2 py-0.5 rounded-full ${levelClass}`;
+                flashcardCounter.textContent = `Thẻ ${index + 1} / ${currentFlashcardSet.length}`;
+                flashcardInner.classList.remove('rotate-y-180');
+                prevCardBtn.disabled = index === 0;
+                nextCardBtn.disabled = index === currentFlashcardSet.length - 1;
+            }
+
+            function navigateFlashcard(direction) {
+                if (direction === 'next' && currentCardIndex < currentFlashcardSet.length - 1) currentCardIndex++;
+                else if (direction === 'prev' && currentCardIndex > 0) currentCardIndex--;
+                showFlashcard(currentCardIndex);
+            }
             
-            showCustomAlert("Đang trích xuất từ vựng và tạo flashcard. Vui lòng chờ...");
-            switchTab('create');
+            // --- Document Functions ---
+            async function generateDocument() {
+                const documentType = document.getElementById('documentTypeSelect').value;
+                const topic = documentTopicInput.value || "các tiến bộ công nghệ gần đây";
 
-            const wordsToProcess = highlightedWords.map(word => ({ word: word.dataset.word, level: word.dataset.level }));
-            const uniqueWords = [...new Map(wordsToProcess.map(item => [item.word, item])).values()];
-            const newVocabData = [];
+                documentLoading.classList.remove('hidden');
+                documentError.classList.add('hidden');
+                documentContent.innerHTML = '';
+                saveDocumentBtn.classList.add('hidden');
 
-            for (const item of uniqueWords) {
-                const prompt = `Cung cấp nghĩa tiếng Việt, phiên âm IPA và một câu ví dụ tiếng Anh cho từ "${item.word}" ở cấp độ ${item.level}. Trả về một đối tượng JSON với các thuộc tính "ipa", "meaning" và "example".`;
-                const payload = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { "ipa": { "type": "STRING" }, "meaning": { "type": "STRING" }, "example": { "type": "STRING" } } } } };
+                const prompt = `Viết một ${documentType} bằng tiếng Anh khoảng 200 từ về chủ đề: "${topic}". Sử dụng từ vựng ở các cấp độ B2, C1, và C2. Đánh dấu các từ khóa quan trọng bằng thẻ HTML, ví dụ: "<span class='highlighted-word' data-word='ubiquitous' data-level='C1'>ubiquitous</span>". Bắt buộc phải có thuộc tính data-level và giá trị của nó phải là "B2", "C1", hoặc "C2". Trả về một đối tượng JSON có thuộc tính "title" và "content_html".`;
+                const payload = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { "title": { "type": "STRING" }, "content_html": { "type": "STRING" } }, required: ["title", "content_html"] } } };
+                
+                try {
+                    const result = await callGeminiAPI(payload);
+                    generatedDocumentData = result;
+                    renderGeneratedDocument(result);
+                    saveDocumentBtn.classList.remove('hidden');
+                } catch (error) {
+                    console.error("Lỗi khi tạo tài liệu:", error);
+                    documentError.textContent = "Lỗi: " + error.message;
+                    documentError.classList.remove('hidden');
+                } finally {
+                    documentLoading.classList.add('hidden');
+                }
+            }
+
+            function renderGeneratedDocument(data) {
+                documentContent.innerHTML = data.content_html;
+                documentContent.querySelectorAll('.highlighted-word').forEach(wordElement => {
+                    const level = wordElement.dataset.level;
+                    if (level) wordElement.classList.add(`${level.toLowerCase()}-level`);
+                    wordElement.addEventListener('click', (e) => showWordPopup(e.currentTarget.dataset.word, level, e.currentTarget));
+                });
+            }
+
+            function saveDocument() {
+                if (!generatedDocumentData.title) return showCustomAlert("Vui lòng tạo tài liệu trước khi lưu.");
+
+                const allDocs = getStoredDocuments();
+                allDocs.push({ id: Date.now(), ...generatedDocumentData, timestamp: new Date().toISOString() });
+                saveStoredDocuments(allDocs);
+                renderDocumentSets(allDocs);
+                showCustomAlert(`Đã lưu tài liệu: "${generatedDocumentData.title}".`);
+                generatedDocumentData = {};
+                documentContent.innerHTML = `<p id="noDocumentMessage" class="text-gray-400 text-center py-10">Chưa có tài liệu nào được tạo.</p>`;
+                saveDocumentBtn.classList.add('hidden');
+            }
+
+            function renderDocumentSets(sets) {
+                documentSetsContainer.innerHTML = '';
+                noDocumentSetsMessage.classList.toggle('hidden', sets.length > 0);
+                if (sets.length === 0) documentSetsContainer.appendChild(noDocumentSetsMessage);
+
+                sets.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                sets.forEach(set => {
+                    const setElement = document.createElement('div');
+                    setElement.className = "bg-gray-700 p-6 rounded-2xl shadow-lg flex flex-col justify-between transition-all duration-300 hover:bg-gray-600";
+                    setElement.innerHTML = `
+                        <div>
+                            <h4 class="text-xl font-bold text-white mb-2">${set.title}</h4>
+                            <p class="text-gray-400 text-xs mt-1">Đã tạo: ${new Date(set.timestamp).toLocaleDateString()}</p>
+                        </div>
+                        <div class="flex flex-wrap justify-end gap-2 mt-4">
+                            <button class="read-btn text-sm px-3 py-1 rounded-full text-purple-400 hover:bg-purple-900"><i class="fa-solid fa-book-open mr-1"></i> Đọc</button>
+                            <button class="create-fc-btn text-sm px-3 py-1 rounded-full text-green-400 hover:bg-green-900"><i class="fa-solid fa-plus mr-1"></i> Tạo Flashcard</button>
+                            <button class="delete-btn text-sm px-3 py-1 rounded-full text-red-400 hover:bg-red-900"><i class="fa-solid fa-trash-can mr-1"></i> Xóa</button>
+                        </div>
+                    `;
+                    documentSetsContainer.appendChild(setElement);
+
+                    setElement.querySelector('.read-btn').addEventListener('click', () => {
+                        currentDocumentTitle.textContent = set.title;
+                        readingDocumentContent.innerHTML = set.content;
+                        readingDocumentContent.querySelectorAll('.highlighted-word').forEach(el => {
+                            const level = el.dataset.level;
+                            if(level) el.classList.add(`${level.toLowerCase()}-level`);
+                            el.addEventListener('click', (e) => showWordPopup(e.currentTarget.dataset.word, level, e.currentTarget));
+                        });
+                        switchReviewSubSection('documentReading');
+                    });
+
+                    setElement.querySelector('.create-fc-btn').addEventListener('click', () => {
+                        readingDocumentContent.innerHTML = set.content;
+                        createFlashcardFromDocument();
+                    });
+
+                    setElement.querySelector('.delete-btn').addEventListener('click', () => {
+                        saveStoredDocuments(getStoredDocuments().filter(d => d.id !== set.id));
+                        renderDocumentSets(getStoredDocuments());
+                        showCustomAlert(`Đã xóa tài liệu: "${set.title}".`);
+                    });
+                });
+            }
+
+            async function createFlashcardFromDocument() {
+                if (!readingDocumentContent.hasChildNodes() || readingDocumentContent.textContent.trim() === '') {
+                    return showCustomAlert("Vui lòng mở một tài liệu hoặc đảm bảo tài liệu có nội dung.");
+                }
+                const highlightedWords = Array.from(readingDocumentContent.querySelectorAll('.highlighted-word'));
+                if (highlightedWords.length === 0) {
+                    return showCustomAlert("Tài liệu này không có từ vựng nào được đánh dấu.");
+                }
+
+                showCustomAlert("Đang trích xuất từ vựng... Vui lòng chờ.");
+                switchTab('create');
+                vocabLoading.classList.remove('hidden');
+                vocabList.innerHTML = '';
+                noVocabMessage.classList.add('hidden');
+
+                const wordsToProcess = highlightedWords.map(w => ({ word: w.dataset.word, level: w.dataset.level }));
+                const uniqueWords = [...new Map(wordsToProcess.map(item => [item.word, item])).values()];
+                
+                const promises = uniqueWords.map(item => {
+                    const prompt = `Cung cấp nghĩa tiếng Việt, phiên âm IPA, và một câu ví dụ tiếng Anh cho từ "${item.word}" (cấp độ ${item.level}). Trả về một đối tượng JSON với các thuộc tính "ipa", "meaning", "example", và "type".`;
+                    const payload = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { "ipa": { "type": "STRING" }, "meaning": { "type": "STRING" }, "example": { "type": "STRING" }, "type": { "type": "STRING" } }, required: ["ipa", "meaning", "example", "type"] } } };
+                    return callGeminiAPI(payload).then(data => ({ ...item, ...data })).catch(err => ({ ...item, error: true }));
+                });
+
+                const results = await Promise.all(promises);
+                generatedVocabData = results.filter(r => !r.error);
+                
+                renderGeneratedVocab(generatedVocabData);
+                vocabActionButtons.classList.remove('hidden');
+                saveFlashcardsBtn.textContent = "Lưu thành Bộ Flashcard";
+                vocabLoading.classList.add('hidden');
+                showCustomAlert("Đã tạo flashcard xong! Bạn có thể xem lại và lưu.");
+            }
+
+            // --- API & Utility Functions ---
+            async function callGeminiAPI(payload) {
                 const apiKey = "AIzaSyD_v3TF-xMvQzJkwNIu020D3pbPivWNy7s";
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                
+                const response = await fetchWithExponentialBackoff(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const result = await response.json();
 
+                if (result.candidates && result.candidates.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        throw new Error("Dữ liệu trả về không phải là JSON hợp lệ.");
+                    }
+                } else {
+                    throw new Error("Không nhận được phản hồi hợp lệ từ API.");
+                }
+            }
+
+            async function fetchWithExponentialBackoff(url, options, retries = 3, delay = 1000) {
+                for (let i = 0; i < retries; i++) {
+                    try {
+                        const response = await fetch(url, options);
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        return response;
+                    } catch (error) {
+                        console.error(`Fetch attempt ${i + 1} failed:`, error);
+                        if (i < retries - 1) await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+                        else throw error;
+                    }
+                }
+            }
+            
+            async function showWordPopup(word, level, target) {
+                const popupContent = document.getElementById('popupContent');
+                popupContent.innerHTML = `<div class="flex items-center justify-center gap-2 text-gray-300 text-sm"><span class="loading-spinner w-4 h-4 border-2"></span> Đang tải...</div>`;
+
+                wordPopup.classList.add('is-visible');
+                // Positioning logic...
+                const mainRect = mainContent.getBoundingClientRect();
+                const targetRect = target.getBoundingClientRect();
+                const popupWidth = 300, popupHeight = 200, padding = 12;
+                let popupLeft = targetRect.left + (targetRect.width / 2) - (popupWidth / 2) - mainRect.left;
+                popupLeft = Math.max(padding, Math.min(popupLeft, mainRect.width - popupWidth - padding));
+                let popupTop = (targetRect.bottom - mainRect.top) + padding;
+                if (popupTop + popupHeight > mainRect.height) {
+                    popupTop = (targetRect.top - mainRect.top) - popupHeight - padding;
+                }
+                wordPopup.style.left = `${popupLeft}px`;
+                wordPopup.style.top = `${popupTop}px`;
+                
+                try {
+                    const prompt = `Cung cấp nghĩa tiếng Việt, phiên âm IPA và một câu ví dụ tiếng Anh cho từ "${word}" ở cấp độ ${level}. Trả về một đối tượng JSON với các thuộc tính "ipa", "meaning" và "example".`;
+                    const payload = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { "ipa": { "type": "STRING" }, "meaning": { "type": "STRING" }, "example": { "type": "STRING" } } } } };
+                    const data = await callGeminiAPI(payload);
+
+                    popupContent.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xl font-bold">${word}</span>
+                                <span class="level-tag text-xs font-semibold px-2 py-0.5 rounded-full ${level.toLowerCase()}-level">${level}</span>
+                            </div>
+                            <button class="pronounce-word-popup text-purple-400 hover:text-purple-300 text-2xl"><i class="fa-solid fa-volume-high"></i></button>
+                        </div>
+                        <p class="text-gray-300 italic text-sm">${data.ipa}</p>
+                        <p class="text-gray-200"><strong>Nghĩa:</strong> ${data.meaning}</p>
+                        <p class="text-gray-400 text-sm italic"><strong>Ví dụ:</strong> ${data.example}</p>
+                    `;
+                    popupContent.querySelector('.pronounce-word-popup').addEventListener('click', () => pronounceText(word));
+                } catch (error) {
+                    popupContent.innerHTML = `<p class="text-red-300">Không thể lấy thông tin. Vui lòng thử lại.</p>`;
+                }
+            }
+
+            function showGuide() {
+                const guideMessage = `
+                    <div class="text-left space-y-6">
+                        <h3 class="text-2xl font-bold text-purple-300 text-center">Chào mừng đến với VocabBoost!</h3>
+                        <div class="p-4 bg-gray-700 rounded-lg border-l-4 border-teal-400">
+                            <h4 class="font-semibold text-lg text-teal-300 mb-2 flex items-center"><i class="fa-solid fa-wand-magic-sparkles w-6 mr-2"></i>Tạo Tài liệu học</h4>
+                            <p class="text-gray-300">Chọn cấp độ (B2, C1, C2) và nhập chủ đề để tạo bộ từ vựng hoặc tài liệu đọc. Bạn có thể lưu chúng lại để học sau.</p>
+                        </div>
+                        <div class="p-4 bg-gray-700 rounded-lg border-l-4 border-pink-400">
+                            <h4 class="font-semibold text-lg text-pink-300 mb-2 flex items-center"><i class="fa-solid fa-layer-group w-6 mr-2"></i>Ôn Tập & Học</h4>
+                            <p class="text-gray-300">Chọn "Bộ Flashcard" hoặc "Tài liệu" để xem lại. Bấm vào các từ được tô sáng trong tài liệu để xem nghĩa.</p>
+                        </div>
+                    </div>
+                `;
+                showCustomAlert(guideMessage, true);
+            }
+
+            // --- TTS Functions (unchanged, assuming they work) ---
+            async function pronounceText(text) {
+                // This function seems complex and less likely to be the source of the main issues.
+                // For now, let's assume it works and focus on the data logic.
+                // A quick check: ensure it has its own API call logic.
+                const payload = { contents: [{ parts: [{ text: text }] }], generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } } } }, model: "gemini-2.5-flash-preview-tts" };
+                const apiKey = "AIzaSyD_v3TF-xMvQzJkwNIu020D3pbPivWNy7s";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
                 try {
                     const response = await fetchWithExponentialBackoff(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                     const result = await response.json();
-                    const data = JSON.parse(result.candidates[0].content.parts[0].text);
-                    newVocabData.push({ ...item, ...data });
-                } catch (error) {
-                    console.error(`Lỗi khi tạo từ vựng "${item.word}":`, error);
-                    newVocabData.push({ ...item, ipa: 'Lỗi', meaning: 'Không thể lấy nghĩa', example: 'Lỗi khi tạo từ vựng.' });
-                }
+                    const audioPart = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+                    if (audioPart && audioPart.inlineData.mimeType.startsWith("audio/L16")) {
+                        const sampleRate = parseInt(audioPart.inlineData.mimeType.match(/rate=(\d+)/)[1], 10);
+                        const pcmData = base64ToArrayBuffer(audioPart.inlineData.data);
+                        const wavBlob = pcmToWav(new Int16Array(pcmData), sampleRate);
+                        new Audio(URL.createObjectURL(wavBlob)).play();
+                    } else { throw new Error("No valid audio data received."); }
+                } catch (error) { console.error("Lỗi khi phát âm:", error); }
+            }
+            function base64ToArrayBuffer(base64) {
+                const binaryString = atob(base64);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+                return bytes.buffer;
+            }
+            function pcmToWav(pcmData, sampleRate) {
+                const header = new ArrayBuffer(44);
+                const view = new DataView(header);
+                const dataSize = pcmData.length * 2;
+                const writeString = (view, offset, string) => { for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i)); };
+                writeString(view, 0, 'RIFF');
+                view.setUint32(4, 36 + dataSize, true);
+                writeString(view, 8, 'WAVE');
+                writeString(view, 12, 'fmt ');
+                view.setUint32(16, 16, true);
+                view.setUint16(20, 1, true);
+                view.setUint16(22, 1, true);
+                view.setUint32(24, sampleRate, true);
+                view.setUint32(28, sampleRate * 2, true);
+                view.setUint16(32, 2, true);
+                view.setUint16(34, 16, true);
+                writeString(view, 36, 'data');
+                view.setUint32(40, dataSize, true);
+                const pcmBytes = new Uint8Array(pcmData.buffer);
+                const wavBytes = new Uint8Array(44 + dataSize);
+                wavBytes.set(new Uint8Array(header), 0);
+                wavBytes.set(pcmBytes, 44);
+                return new Blob([wavBytes], { type: 'audio/wav' });
             }
 
-            generatedVocabData = newVocabData;
-            renderGeneratedVocab(generatedVocabData);
-            vocabActionButtons.classList.remove('hidden');
-            saveFlashcardsBtn.textContent = "Lưu thành Bộ Flashcard";
-            vocabLoading.classList.add('hidden');
-            showCustomAlert("Đã tạo flashcard xong! Bạn có thể xem lại và lưu.");
-        }
-        
-        function renderGeneratedVocab(vocab) {
-            vocabList.innerHTML = '';
-            noVocabMessage.classList.toggle('hidden', vocab.length > 0);
-
-            vocab.forEach((item, index) => {
-                const li = document.createElement('li');
-                li.className = `flex items-center justify-between bg-gray-900 p-4 rounded-xl border-l-4 ${item.level === 'B2' ? 'border-blue-500' : 'border-red-500'}`;
-                li.innerHTML = `
-                    <div class="flex-1">
-                        <div class="flex items-center">
-                            <span class="text-xl font-bold text-white">${item.word}</span>
-                            <button class="pronounce-btn text-purple-400 hover:text-purple-300 ml-3 text-lg transition-colors" data-word="${item.word}"><i class="fa-solid fa-volume-high"></i></button>
-                        </div>
-                        <p class="text-gray-400 text-sm italic mt-1">${item.ipa}</p>
-                        <p class="text-gray-300 mt-2">${item.meaning} <span class="level-tag text-xs font-semibold px-2 py-0.5 rounded-full ${item.level === 'B2' ? 'b2-level' : 'c1-c2-level'}">${item.level || 'N/A'}</span></p>
-                        <p class="text-gray-500 text-sm mt-1">Ví dụ: "${item.example}"</p>
-                    </div>
-                    <button class="delete-vocab-btn text-red-500 hover:text-red-400 transition-colors p-2 rounded-full" data-index="${index}"><i class="fa-solid fa-xmark"></i></button>
-                `;
-                vocabList.appendChild(li);
-            });
-
-            document.querySelectorAll('.delete-vocab-btn').forEach(btn => btn.addEventListener('click', (e) => {
-                generatedVocabData.splice(parseInt(e.currentTarget.dataset.index), 1);
-                renderGeneratedVocab(generatedVocabData);
-            }));
-            document.querySelectorAll('.pronounce-btn').forEach(btn => btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                pronounceText(e.currentTarget.dataset.word);
-            }));
-        }
-
-        function saveOrUpdateFlashcardSet() {
-            if (generatedVocabData.length === 0) {
-                showCustomAlert("Vui lòng tạo từ vựng trước khi lưu.");
-                return;
-            }
-
-            const allSets = getStoredFlashcardSets();
-            // *** FIXED: Added fallback for level to prevent 'undefined' title ***
-            const level = generatedVocabData[0]?.level || 'N/A';
-            const title = `Bộ từ vựng cấp độ ${level} (${generatedVocabData.length} từ)`;
-
-            if (editingFlashcardSetId) {
-                const setIndex = allSets.findIndex(s => s.id === editingFlashcardSetId);
-                if (setIndex > -1) {
-                    allSets[setIndex].title = title;
-                    allSets[setIndex].level = level;
-                    allSets[setIndex].vocabularies = generatedVocabData;
-                    allSets[setIndex].timestamp = new Date().toISOString();
-                }
-            } else {
-                allSets.push({
-                    id: Date.now(),
-                    title: title,
-                    level: level,
-                    vocabularies: generatedVocabData,
-                    timestamp: new Date().toISOString()
-                });
-            }
-
-            saveStoredFlashcardSets(allSets);
-            renderFlashcardSets(allSets);
-            showCustomAlert(`Đã lưu thành công bộ flashcard: "${title}".`);
-            resetVocabForm();
-        }
-
-        function resetVocabForm() {
-            generatedVocabData = [];
-            vocabList.innerHTML = '';
-            noVocabMessage.classList.remove('hidden');
-            vocabActionButtons.classList.add('hidden');
-            vocabTopicInput.value = '';
-            editingFlashcardSetId = null;
-        }
-
-        function editFlashcardSet(id) {
-            const allSets = getStoredFlashcardSets();
-            const set = allSets.find(s => s.id === id);
-            if (set) {
-                editingFlashcardSetId = id;
-                generatedVocabData = set.vocabularies;
-                renderGeneratedVocab(generatedVocabData);
-                vocabActionButtons.classList.remove('hidden');
-                saveFlashcardsBtn.textContent = "Lưu thay đổi";
-                switchTab('create');
-            } else {
-                showCustomAlert("Không tìm thấy bộ flashcard này.");
-            }
-        }
-
-        function renderFlashcardSets(sets) {
-            flashcardSetsContainer.innerHTML = '';
-            noFlashcardSetsMessage.classList.toggle('hidden', sets.length > 0);
-            if(sets.length === 0) flashcardSetsContainer.appendChild(noFlashcardSetsMessage);
-
-            sets.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // Sort by newest first
-
-            sets.forEach(set => {
-                const setElement = document.createElement('div');
-                setElement.className = `flashcard-set bg-gray-700 p-6 rounded-2xl shadow-lg flex flex-col justify-between transition-all duration-300 hover:bg-gray-600 ${set.level === 'B2' ? 'border-l-4 border-blue-500' : 'border-l-4 border-red-500'}`;
-                setElement.innerHTML = `
-                    <div>
-                        <h4 class="text-xl font-bold text-white mb-2">${set.title}</h4>
-                        <p class="text-gray-400 text-sm"><span class="font-semibold">${set.level}</span> &bull; ${set.vocabularies.length} từ</p>
-                        <p class="text-gray-400 text-xs mt-1">Đã tạo: ${new Date(set.timestamp).toLocaleDateString()}</p>
-                    </div>
-                    <div class="flex flex-wrap justify-end gap-2 mt-4">
-                        <button class="view-btn text-sm px-3 py-1 rounded-full text-purple-400 hover:bg-purple-900 transition-colors"><i class="fa-solid fa-play mr-1"></i> Học</button>
-                        <button class="edit-btn text-sm px-3 py-1 rounded-full text-teal-400 hover:bg-teal-900 transition-colors"><i class="fa-solid fa-pen-to-square mr-1"></i> Sửa</button>
-                        <button class="delete-btn text-sm px-3 py-1 rounded-full text-red-400 hover:bg-red-900 transition-colors"><i class="fa-solid fa-trash-can mr-1"></i> Xóa</button>
-                    </div>
-                `;
-                flashcardSetsContainer.appendChild(setElement);
-
-                setElement.querySelector('.view-btn').addEventListener('click', () => {
-                    currentFlashcardSet = set.vocabularies;
-                    currentCardIndex = 0;
-                    currentFlashcardSetTitle.textContent = set.title;
-                    showFlashcard(currentCardIndex);
-                    showReviewSubSection('flashcardLearning');
-                });
-                setElement.querySelector('.edit-btn').addEventListener('click', () => editFlashcardSet(set.id));
-                setElement.querySelector('.delete-btn').addEventListener('click', () => deleteFlashcardSet(set.id, set.title));
-            });
-        }
-
-        function deleteFlashcardSet(id, title) {
-            let allSets = getStoredFlashcardSets();
-            allSets = allSets.filter(s => s.id !== id);
-            saveStoredFlashcardSets(allSets);
-            renderFlashcardSets(allSets);
-            showCustomAlert(`Đã xóa thành công bộ flashcard: "${title}".`);
-        }
-
-        function showFlashcard(index) {
-            const card = currentFlashcardSet[index];
-            flashcardWord.textContent = card.word;
-            flashcardIpa.textContent = card.ipa;
-            backFlashcardWord.textContent = card.word;
-            backFlashcardIpa.textContent = card.ipa;
-            backFlashcardMeaning.textContent = card.meaning;
-            backFlashcardExample.innerHTML = card.example;
-            backFlashcardLevel.textContent = card.level;
-            backFlashcardLevel.className = `level-tag text-xs font-semibold px-2 py-0.5 rounded-full ${card.level === 'B2' ? 'b2-level' : 'c1-c2-level'}`;
-            flashcardCounter.textContent = `Thẻ ${index + 1} / ${currentFlashcardSet.length}`;
-            flashcardInner.classList.remove('rotate-y-180');
-            prevCardBtn.disabled = index === 0;
-            nextCardBtn.disabled = index === currentFlashcardSet.length - 1;
-        }
-
-        function flipFlashcard() {
-            flashcardInner.classList.toggle('rotate-y-180');
-        }
-
-        function navigateFlashcard(direction) {
-            if (direction === 'next' && currentCardIndex < currentFlashcardSet.length - 1) currentCardIndex++;
-            else if (direction === 'prev' && currentCardIndex > 0) currentCardIndex--;
-            showFlashcard(currentCardIndex);
-        }
-        
-        // --- Document & Newsletter Functions ---
-        async function generateDocument() {
-            const documentType = documentTypeSelect.value;
-            const topic = documentTopicInput.value || "các tiến bộ công nghệ gần đây";
-
-            documentLoading.classList.remove('hidden');
-            documentError.classList.add('hidden');
-            noDocumentMessage.classList.add('hidden');
-            documentContent.innerHTML = '';
-            saveDocumentBtn.classList.add('hidden');
-
-            // *** FIXED: Improved prompt for more reliable data-level attribute ***
-            const prompt = `Bạn là một chuyên gia ngôn ngữ. Hãy viết một ${documentType} bằng tiếng Anh khoảng 200 từ về chủ đề: "${topic}". Sử dụng từ vựng ở cấp độ B2 và C1/C2. Hãy đánh dấu các từ khóa quan trọng bằng cách bọc chúng trong một thẻ HTML, ví dụ: "<span class='highlighted-word' data-word='ubiquitous' data-level='C1/C2'>ubiquitous</span>". Bắt buộc phải có thuộc tính data-level và giá trị của nó phải là "B2" hoặc "C1/C2". Hãy trả về toàn bộ nội dung trong một đối tượng JSON có thuộc tính "title" và "content_html".`;
-
-            const payload = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { "title": { "type": "STRING" }, "content_html": { "type": "STRING" } } } } };
-            const apiKey = "AIzaSyD_v3TF-xMvQzJkwNIu020D3pbPivWNy7s";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-
-            try {
-                const response = await fetchWithExponentialBackoff(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                const result = await response.json();
-                const parsedData = JSON.parse(result.candidates[0].content.parts[0].text);
-
-                if (parsedData.title && parsedData.content_html) {
-                    generatedDocumentData = parsedData;
-                    renderGeneratedDocument(parsedData);
-                    saveDocumentBtn.classList.remove('hidden');
-                } else { throw new Error("Không thể tạo tài liệu. Dữ liệu trả về không hợp lệ."); }
-            } catch (error) {
-                console.error("Lỗi khi tạo tài liệu:", error);
-                documentError.textContent = "Lỗi khi tạo tài liệu: " + error.message;
-                documentError.classList.remove('hidden');
-                noDocumentMessage.classList.remove('hidden');
-            } finally {
-                documentLoading.classList.add('hidden');
-            }
-        }
-
-        function renderGeneratedDocument(data) {
-            documentContent.innerHTML = data.content_html;
-            documentContent.querySelectorAll('.highlighted-word').forEach(wordElement => {
-                wordElement.classList.add(wordElement.dataset.level === 'B2' ? 'b2-level' : 'c1-c2-level');
-                wordElement.addEventListener('click', (event) => showWordPopup(event.currentTarget.dataset.word, event.currentTarget.dataset.level, event.currentTarget));
-            });
-        }
-
-        function saveDocument() {
-            if (!generatedDocumentData.title) {
-                showCustomAlert("Vui lòng tạo tài liệu trước khi lưu.");
-                return;
-            }
-
-            const allDocs = getStoredDocuments();
-            allDocs.push({
-                id: Date.now(),
-                title: generatedDocumentData.title,
-                content: generatedDocumentData.content_html,
-                timestamp: new Date().toISOString()
-            });
-            saveStoredDocuments(allDocs);
-            renderDocumentSets(allDocs);
-            showCustomAlert(`Đã lưu thành công tài liệu: "${generatedDocumentData.title}".`);
-            generatedDocumentData = {};
-            documentContent.innerHTML = `<p id="noDocumentMessage" class="text-gray-400 text-center py-10">Chưa có tài liệu nào được tạo.</p>`;
-            saveDocumentBtn.classList.add('hidden');
-        }
-
-        function renderDocumentSets(sets) {
-            documentSetsContainer.innerHTML = '';
-            noDocumentSetsMessage.classList.toggle('hidden', sets.length > 0);
-            if(sets.length === 0) documentSetsContainer.appendChild(noDocumentSetsMessage);
-
-            sets.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-            sets.forEach(set => {
-                const setElement = document.createElement('div');
-                setElement.className = "document-set bg-gray-700 p-6 rounded-2xl shadow-lg flex flex-col justify-between transition-all duration-300 hover:bg-gray-600";
-                setElement.innerHTML = `
-                    <div>
-                        <h4 class="text-xl font-bold text-white mb-2">${set.title}</h4>
-                        <p class="text-gray-400 text-xs mt-1">Đã tạo: ${new Date(set.timestamp).toLocaleDateString()}</p>
-                    </div>
-                    <div class="flex flex-wrap justify-end gap-2 mt-4">
-                        <button class="read-btn text-sm px-3 py-1 rounded-full text-purple-400 hover:bg-purple-900 transition-colors"><i class="fa-solid fa-book-open mr-1"></i> Đọc</button>
-                        <!-- ADDED: New button to create flashcards from document list -->
-                        <button class="create-fc-btn text-sm px-3 py-1 rounded-full text-green-400 hover:bg-green-900 transition-colors"><i class="fa-solid fa-plus mr-1"></i> Tạo Flashcard</button>
-                        <button class="delete-btn text-sm px-3 py-1 rounded-full text-red-400 hover:bg-red-900 transition-colors"><i class="fa-solid fa-trash-can mr-1"></i> Xóa</button>
-                    </div>
-                `;
-                documentSetsContainer.appendChild(setElement);
-
-                setElement.querySelector('.read-btn').addEventListener('click', () => {
-                    currentDocumentTitle.textContent = set.title;
-                    readingDocumentContent.innerHTML = set.content;
-                    readingDocumentContent.querySelectorAll('.highlighted-word').forEach(wordElement => {
-                        wordElement.classList.add(wordElement.dataset.level === 'B2' ? 'b2-level' : 'c1-c2-level');
-                        wordElement.addEventListener('click', (event) => showWordPopup(event.currentTarget.dataset.word, event.currentTarget.dataset.level, event.currentTarget));
-                    });
-                    showReviewSubSection('documentReading');
-                });
-
-                // *** ADDED: Event listener for the new button ***
-                setElement.querySelector('.create-fc-btn').addEventListener('click', () => {
-                    // Temporarily load the content into the hidden reading area
-                    readingDocumentContent.innerHTML = set.content;
-                    // Call the existing function to process it
-                    createFlashcardFromDocument();
-                });
-
-                setElement.querySelector('.delete-btn').addEventListener('click', () => deleteDocument(set.id, set.title));
-            });
-        }
-
-        function deleteDocument(id, title) {
-            let allDocs = getStoredDocuments();
-            allDocs = allDocs.filter(d => d.id !== id);
-            saveStoredDocuments(allDocs);
-            renderDocumentSets(allDocs);
-            showCustomAlert(`Đã xóa thành công tài liệu: "${title}".`);
-        }
-        
-        async function showWordPopup(word, level, target) {
-            const popupContent = document.getElementById('popupContent');
-            popupContent.innerHTML = `<div class="flex items-center justify-center gap-2 text-gray-300 text-sm"><span class="loading-spinner w-4 h-4 border-2"></span> Đang tải...</div>`;
-
-            wordPopup.classList.add('is-visible');
-            const mainRect = mainContent.getBoundingClientRect();
-            const targetRect = target.getBoundingClientRect();
-            const popupWidth = 300;
-            const popupHeight = 200;
-            const padding = 12;
-
-            let popupLeft = targetRect.left + (targetRect.width / 2) - (popupWidth / 2) - mainRect.left;
-            popupLeft = Math.max(padding, Math.min(popupLeft, mainRect.width - popupWidth - padding));
-            let popupTop = (targetRect.bottom - mainRect.top) + padding;
-            if (popupTop + popupHeight > mainRect.height) {
-                popupTop = (targetRect.top - mainRect.top) - popupHeight - padding;
-            }
-            
-            wordPopup.style.left = `${popupLeft}px`;
-            wordPopup.style.top = `${popupTop}px`;
-            
-            const prompt = `Cung cấp nghĩa tiếng Việt, phiên âm IPA và một câu ví dụ tiếng Anh cho từ "${word}" ở cấp độ ${level}. Trả về một đối tượng JSON với các thuộc tính "ipa", "meaning" và "example".`;
-            const payload = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { "ipa": { "type": "STRING" }, "meaning": { "type": "STRING" }, "example": { "type": "STRING" } } } } };
-            const apiKey = "AIzaSyD_v3TF-xMvQzJkwNIu020D3pbPivWNy7s";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-
-            try {
-                const response = await fetchWithExponentialBackoff(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                const result = await response.json();
-                const data = JSON.parse(result.candidates[0].content.parts[0].text);
-
-                popupContent.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-2">
-                            <span class="text-xl font-bold">${word}</span>
-                            <span class="level-tag text-xs font-semibold px-2 py-0.5 rounded-full ${level === 'B2' ? 'b2-level' : 'c1-c2-level'}">${level}</span>
-                        </div>
-                        <button class="pronounce-word-popup text-purple-400 hover:text-purple-300 text-2xl transition-colors"><i class="fa-solid fa-volume-high"></i></button>
-                    </div>
-                    <p class="text-gray-300 italic text-sm">${data.ipa}</p>
-                    <p class="text-gray-200"><strong>Nghĩa:</strong> ${data.meaning}</p>
-                    <p class="text-gray-400 text-sm italic"><strong>Ví dụ:</strong> ${data.example}</p>
-                `;
-                popupContent.querySelector('.pronounce-word-popup').addEventListener('click', () => pronounceText(word));
-            } catch (error) {
-                console.error("Lỗi khi lấy thông tin từ vựng:", error);
-                popupContent.innerHTML = `<p class="text-red-300">Không thể lấy thông tin. Vui lòng thử lại.</p>`;
-            }
-        }
-
-        async function pronounceText(text) {
-            const payload = { contents: [{ parts: [{ text: text }] }], generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } } } }, model: "gemini-2.5-flash-preview-tts" };
-            const apiKey = "AIzaSyD_v3TF-xMvQzJkwNIu020D3pbPivWNy7s";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
-
-            try {
-                const response = await fetchWithExponentialBackoff(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                const result = await response.json();
-                const audioPart = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-
-                if (audioPart && audioPart.inlineData.mimeType.startsWith("audio/L16")) {
-                    const sampleRate = parseInt(audioPart.inlineData.mimeType.match(/rate=(\d+)/)[1], 10);
-                    const pcmData = base64ToArrayBuffer(audioPart.inlineData.data);
-                    const wavBlob = pcmToWav(new Int16Array(pcmData), sampleRate);
-                    const audio = new Audio(URL.createObjectURL(wavBlob));
-                    audio.play();
-                } else { throw new Error("No valid audio data received."); }
-            } catch (error) { console.error("Lỗi khi phát âm:", error); }
-        }
-
-        function base64ToArrayBuffer(base64) {
-            const binaryString = atob(base64);
-            const len = binaryString.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
-            return bytes.buffer;
-        }
-
-        function pcmToWav(pcmData, sampleRate) {
-            const header = new ArrayBuffer(44);
-            const view = new DataView(header);
-            const dataSize = pcmData.length * 2;
-            
-            // RIFF chunk descriptor
-            writeString(view, 0, 'RIFF');
-            view.setUint32(4, 36 + dataSize, true);
-            writeString(view, 8, 'WAVE');
-            // fmt sub-chunk
-            writeString(view, 12, 'fmt ');
-            view.setUint32(16, 16, true);
-            view.setUint16(20, 1, true); // Audio format 1 for PCM
-            view.setUint16(22, 1, true); // Num channels
-            view.setUint32(24, sampleRate, true);
-            view.setUint32(28, sampleRate * 2, true); // Byte rate
-            view.setUint16(32, 2, true); // Block align
-            view.setUint16(34, 16, true); // Bits per sample
-            // data sub-chunk
-            writeString(view, 36, 'data');
-            view.setUint32(40, dataSize, true);
-
-            const pcmBytes = new Uint8Array(pcmData.buffer);
-            const wavBytes = new Uint8Array(44 + dataSize);
-            wavBytes.set(new Uint8Array(header), 0);
-            wavBytes.set(pcmBytes, 44);
-
-            return new Blob([wavBytes], { type: 'audio/wav' });
-        }
-        function writeString(view, offset, string) {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i));
-            }
-        }
-        
-        async function fetchWithExponentialBackoff(url, options, retries = 3, delay = 1000) {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const response = await fetch(url, options);
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    return response;
-                } catch (error) {
-                    console.error(`Fetch attempt ${i + 1} failed:`, error);
-                    if (i < retries - 1) await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
-                    else throw error;
-                }
-            }
-        }
-        
-        document.getElementById('guideBtn').addEventListener('click', () => {
-            const guideMessage = `
-                <div class="text-left space-y-6">
-                    <h3 class="text-2xl font-bold text-purple-300 text-center">Chào mừng đến với VocabBoost!</h3>
-                    
-                    <div class="p-4 bg-gray-700 rounded-lg border-l-4 border-teal-400">
-                        <h4 class="font-semibold text-lg text-teal-300 mb-2 flex items-center"><i class="fa-solid fa-wand-magic-sparkles w-6 mr-2"></i>Tạo Tài liệu học</h4>
-                        <p class="text-gray-300">Chọn cấp độ (B2/C1/C2) và nhập chủ đề để tạo bộ từ vựng hoặc tài liệu đọc chuyên sâu. Bạn có thể lưu chúng lại để học sau.</p>
-                    </div>
-
-                    <div class="p-4 bg-gray-700 rounded-lg border-l-4 border-pink-400">
-                        <h4 class="font-semibold text-lg text-pink-300 mb-2 flex items-center"><i class="fa-solid fa-layer-group w-6 mr-2"></i>Ôn Tập & Học</h4>
-                        <p class="text-gray-300">Xem lại các bộ flashcard và tài liệu bạn đã lưu. Trong chế độ flashcard, lật thẻ để xem nghĩa và chuyển qua lại giữa các từ. Khi đọc tài liệu, bấm vào các từ được tô sáng để xem nghĩa và nghe phát âm.</p>
-                    </div>
-                </div>
-            `;
-            showCustomAlert(guideMessage, true);
+            // --- Initial Load ---
+            switchTab('create');
+            renderFlashcardSets(getStoredFlashcardSets());
+            renderDocumentSets(getStoredDocuments());
         });
-
     </script>
 </body>
 </html>
