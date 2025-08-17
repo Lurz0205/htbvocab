@@ -270,7 +270,7 @@
             let currentFlashcardSet = [];
             let currentCardIndex = 0;
             let sourceDocumentTitleForFlashcard = null;
-            let isFetchingWordInfo = false; // Lock for popup API calls
+            let isFetchingWordInfo = false;
 
             // --- LocalStorage Helpers ---
             const getStoredFlashcardSets = () => JSON.parse(localStorage.getItem('vocabBoostFlashcards') || '[]');
@@ -461,7 +461,7 @@
                         borderColorClass = 'border-teal-500';
                     } else if(set.level === 'B2') {
                         borderColorClass = 'border-blue-500';
-                    } else if(set.level === 'C1/C2') { // Handle C1/C2 case
+                    } else if(set.level === 'C1/C2') {
                         borderColorClass = 'border-purple-500';
                     }
 
