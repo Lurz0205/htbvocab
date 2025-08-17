@@ -270,6 +270,7 @@
             let generatedDocumentData = {};
             let currentFlashcardSet = [];
             let currentCardIndex = 0;
+            let sourceDocumentTitleForFlashcard = null; // For custom flashcard titles
 
             // --- LocalStorage Helpers ---
             const getStoredFlashcardSets = () => JSON.parse(localStorage.getItem('vocabBoostFlashcards') || '[]');
@@ -322,9 +323,10 @@
             // --- Vocabulary & Flashcard Functions ---
             async function generateVocabulary() {
                 editingFlashcardSetId = null;
+                sourceDocumentTitleForFlashcard = null;
                 const selectedLevel = document.querySelector('input[name="vocabLevel"]:checked').value;
                 const wordCount = selectedLevel === 'B2' ? 15 : 10;
-                const topic = vocabTopicInput.value || `một danh sách ${wordCount} từ vựng ${selectedLevel}`;
+                const topic = vocabTopicInput.value || `một danh sách ${wordCount} từ vựng ${selectedLevel} khác nhau`;
 
                 vocabLoading.classList.remove('hidden');
                 vocabError.classList.add('hidden');
@@ -332,7 +334,7 @@
                 vocabActionButtons.classList.add('hidden');
                 vocabList.innerHTML = '';
 
-                const prompt = `Tạo một danh sách từ vựng tiếng Anh theo yêu cầu: "${topic}". Cấp độ từ vựng là ${selectedLevel}. Với mỗi từ, cung cấp: word, ipa, type, meaning (tiếng Việt), example (tiếng Anh), và level (phải là "B2", "C1", hoặc "C2"). Trả về một mảng JSON.`;
+                const prompt = `Tạo một danh sách các từ vựng tiếng Anh **khác nhau** (không trùng lặp) theo yêu cầu: "${topic}". Cấp độ từ vựng là ${selectedLevel}. Với mỗi từ, cung cấp: word (luôn là chữ thường), ipa, type, meaning (tiếng Việt), example (tiếng Anh), và level (phải là "B2", "C1", hoặc "C2"). Trả về một mảng JSON.`;
                 const payload = {
                     contents: [{ parts: [{ text: prompt }] }],
                     generationConfig: {
@@ -342,9 +344,11 @@
                 };
 
                 try {
-                    const result = await callGeminiAPI(payload);
+                    let result = await callGeminiAPI(payload);
                     if (Array.isArray(result) && result.length > 0) {
-                        generatedVocabData = result;
+                        // Filter for unique words
+                        const uniqueWords = [...new Map(result.map(item => [item.word.toLowerCase(), item])).values()];
+                        generatedVocabData = uniqueWords;
                         renderGeneratedVocab(generatedVocabData);
                         vocabActionButtons.classList.remove('hidden');
                         saveFlashcardsBtn.textContent = "Lưu thành Bộ Flashcard";
@@ -396,14 +400,22 @@
             function saveOrUpdateFlashcardSet() {
                 if (generatedVocabData.length === 0) return showCustomAlert("Vui lòng tạo từ vựng trước khi lưu.");
                 const allSets = getStoredFlashcardSets();
-                const level = generatedVocabData[0]?.level || 'N/A';
-                const title = `Bộ từ vựng cấp độ ${level} (${generatedVocabData.length} từ)`;
+                
+                let title;
+                let isFromDoc = false;
+                if (sourceDocumentTitleForFlashcard) {
+                    title = `Từ vựng từ: ${sourceDocumentTitleForFlashcard}`;
+                    isFromDoc = true;
+                } else {
+                    const level = generatedVocabData[0]?.level || 'N/A';
+                    title = `Bộ từ vựng cấp độ ${level} (${generatedVocabData.length} từ)`;
+                }
 
                 if (editingFlashcardSetId) {
                     const setIndex = allSets.findIndex(s => s.id === editingFlashcardSetId);
-                    if (setIndex > -1) allSets[setIndex] = { ...allSets[setIndex], title, level, vocabularies: generatedVocabData, timestamp: new Date().toISOString() };
+                    if (setIndex > -1) allSets[setIndex] = { ...allSets[setIndex], title, vocabularies: generatedVocabData, timestamp: new Date().toISOString(), isFromDocument: isFromDoc };
                 } else {
-                    allSets.push({ id: Date.now(), title, level, vocabularies: generatedVocabData, timestamp: new Date().toISOString() });
+                    allSets.push({ id: Date.now(), title, vocabularies: generatedVocabData, timestamp: new Date().toISOString(), isFromDocument: isFromDoc });
                 }
 
                 saveStoredFlashcardSets(allSets);
@@ -419,6 +431,7 @@
                 vocabActionButtons.classList.add('hidden');
                 vocabTopicInput.value = '';
                 editingFlashcardSetId = null;
+                sourceDocumentTitleForFlashcard = null;
             }
 
             function editFlashcardSet(id) {
@@ -426,6 +439,7 @@
                 if (set) {
                     editingFlashcardSetId = id;
                     generatedVocabData = set.vocabularies;
+                    sourceDocumentTitleForFlashcard = set.isFromDocument ? set.title.replace('Từ vựng từ: ', '') : null;
                     renderGeneratedVocab(generatedVocabData);
                     vocabActionButtons.classList.remove('hidden');
                     saveFlashcardsBtn.textContent = "Lưu thay đổi";
@@ -442,15 +456,21 @@
                 sets.forEach(set => {
                     const setElement = document.createElement('div');
                     let borderColorClass = 'border-gray-500';
-                    if(set.level === 'B2') borderColorClass = 'border-blue-500';
-                    else if(set.level === 'C1') borderColorClass = 'border-orange-500';
-                    else if(set.level === 'C2') borderColorClass = 'border-red-500';
+                    if (set.isFromDocument) {
+                        borderColorClass = 'border-teal-500';
+                    } else if(set.level === 'B2') {
+                        borderColorClass = 'border-blue-500';
+                    } else if(set.level === 'C1') {
+                        borderColorClass = 'border-orange-500';
+                    } else if(set.level === 'C2') {
+                        borderColorClass = 'border-red-500';
+                    }
 
                     setElement.className = `card p-6 rounded-2xl shadow-lg flex flex-col justify-between hover:bg-gray-400/20 border-l-4 ${borderColorClass}`;
                     setElement.innerHTML = `
                         <div>
                             <h4 class="text-xl font-bold mb-2">${set.title}</h4>
-                            <p class="text-secondary text-sm"><span class="font-semibold">${set.level}</span> &bull; ${set.vocabularies.length} từ</p>
+                            <p class="text-secondary text-sm">${set.isFromDocument ? '' : `<span class="font-semibold">${set.level}</span> &bull; `}${set.vocabularies.length} từ</p>
                             <p class="text-secondary text-xs mt-1">Đã tạo: ${new Date(set.timestamp).toLocaleDateString()}</p>
                         </div>
                         <div class="flex flex-wrap justify-end gap-2 mt-4">
@@ -490,27 +510,21 @@
                 backFlashcardLevel.textContent = card.level;
                 backFlashcardLevel.className = `level-tag ${levelClass}`;
                 flashcardCounter.textContent = `Thẻ ${index + 1} / ${currentFlashcardSet.length}`;
-                // Do not flip here, let navigateFlashcard handle it
                 prevCardBtn.disabled = index === 0;
                 nextCardBtn.disabled = index === currentFlashcardSet.length - 1;
             }
 
-            // *** FIXED: Updated flashcard navigation logic ***
             function navigateFlashcard(direction) {
                 const isFlipped = flashcardInner.classList.contains('rotate-y-180');
-
                 const updateCard = () => {
-                    if (direction === 'next' && currentCardIndex < currentFlashcardSet.length - 1) {
-                        currentCardIndex++;
-                    } else if (direction === 'prev' && currentCardIndex > 0) {
-                        currentCardIndex--;
-                    }
+                    if (direction === 'next' && currentCardIndex < currentFlashcardSet.length - 1) currentCardIndex++;
+                    else if (direction === 'prev' && currentCardIndex > 0) currentCardIndex--;
                     showFlashcard(currentCardIndex);
                 };
 
                 if (isFlipped) {
                     flashcardInner.classList.remove('rotate-y-180');
-                    setTimeout(updateCard, 350); // Wait for flip animation
+                    setTimeout(updateCard, 350);
                 } else {
                     updateCard();
                 }
@@ -519,7 +533,7 @@
             // --- Document Functions ---
             async function generateDocument() {
                 const documentType = document.getElementById('documentTypeSelect').value;
-                const topic = documentTopicInput.value || "các tiến bộ công nghệ gần đây";
+                const topic = documentTopicInput.value || "một chủ đề ngẫu nhiên thú vị từ các lĩnh vực như khoa học, lịch sử, nghệ thuật, hoặc văn hóa";
 
                 documentLoading.classList.remove('hidden');
                 documentError.classList.add('hidden');
@@ -531,6 +545,7 @@
                 
                 try {
                     const result = await callGeminiAPI(payload);
+                    result.title = result.title.replace(/<[^>]*>?/gm, ''); // Sanitize title
                     generatedDocumentData = result;
                     renderGeneratedDocument(result);
                     saveDocumentBtn.classList.remove('hidden');
@@ -587,7 +602,6 @@
 
                     setElement.querySelector('.read-btn').addEventListener('click', () => {
                         currentDocumentTitle.textContent = set.title;
-                        // *** FIXED: Use set.content_html instead of set.content ***
                         readingDocumentContent.innerHTML = set.content_html; 
                         readingDocumentContent.querySelectorAll('.highlighted-word').forEach(el => {
                             const level = el.dataset.level;
@@ -599,6 +613,7 @@
 
                     setElement.querySelector('.create-fc-btn').addEventListener('click', () => {
                         readingDocumentContent.innerHTML = set.content_html;
+                        sourceDocumentTitleForFlashcard = set.title;
                         createFlashcardFromDocument();
                     });
 
@@ -674,9 +689,15 @@
                 const mainRect = mainContent.getBoundingClientRect();
                 const popupWidth = 300, popupHeight = 200, padding = 12;
                 let popupLeft = targetRect.left + (targetRect.width / 2) - (popupWidth / 2) - mainRect.left;
-                popupLeft = Math.max(padding, Math.min(popupLeft, mainRect.width - popupWidth - padding));
                 let popupTop = (targetRect.bottom - mainRect.top) + padding;
-                if (popupTop + popupHeight > mainRect.height) popupTop = (targetRect.top - mainRect.top) - popupHeight - padding;
+                
+                // *** FIXED: Constrain popup within viewport ***
+                popupLeft = Math.max(padding, Math.min(popupLeft, mainContent.clientWidth - popupWidth - padding));
+                if (popupTop + popupHeight > mainContent.clientHeight) {
+                    popupTop = (targetRect.top - mainRect.top) - popupHeight - padding;
+                }
+                popupTop = Math.max(padding, popupTop);
+
                 wordPopup.style.left = `${popupLeft}px`;
                 wordPopup.style.top = `${popupTop}px`;
                 
