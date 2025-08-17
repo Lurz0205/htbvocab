@@ -206,7 +206,6 @@
     <div id="wordPopup" class="absolute p-4 rounded-xl shadow-2xl border border-color max-w-sm"><div id="popupContent" class="space-y-2"></div></div>
     
     <script>
-        // --- START SCRIPT ---
         document.addEventListener('DOMContentLoaded', () => {
             // --- DOM Elements ---
             const mainContent = document.getElementById('mainContent');
@@ -270,7 +269,7 @@
             let generatedDocumentData = {};
             let currentFlashcardSet = [];
             let currentCardIndex = 0;
-            let sourceDocumentTitleForFlashcard = null; // For custom flashcard titles
+            let sourceDocumentTitleForFlashcard = null;
 
             // --- LocalStorage Helpers ---
             const getStoredFlashcardSets = () => JSON.parse(localStorage.getItem('vocabBoostFlashcards') || '[]');
@@ -346,7 +345,6 @@
                 try {
                     let result = await callGeminiAPI(payload);
                     if (Array.isArray(result) && result.length > 0) {
-                        // Filter for unique words
                         const uniqueWords = [...new Map(result.map(item => [item.word.toLowerCase(), item])).values()];
                         generatedVocabData = uniqueWords;
                         renderGeneratedVocab(generatedVocabData);
@@ -639,20 +637,25 @@
                 const wordsToProcess = highlightedWords.map(w => ({ word: w.dataset.word, level: w.dataset.level }));
                 const uniqueWords = [...new Map(wordsToProcess.map(item => [item.word, item])).values()];
                 
-                const promises = uniqueWords.map(item => {
-                    const prompt = `Cung cấp nghĩa tiếng Việt, phiên âm IPA, và một câu ví dụ tiếng Anh cho từ "${item.word}" (cấp độ ${item.level}). Trả về một đối tượng JSON với các thuộc tính "ipa", "meaning", "example", và "type".`;
-                    const payload = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { "ipa": { "type": "STRING" }, "meaning": { "type": "STRING" }, "example": { "type": "STRING" }, "type": { "type": "STRING" } }, required: ["ipa", "meaning", "example", "type"] } } };
-                    return callGeminiAPI(payload).then(data => ({ ...item, ...data })).catch(err => ({ ...item, error: true }));
-                });
-
-                const results = await Promise.all(promises);
-                generatedVocabData = results.filter(r => !r.error);
+                const newVocabData = [];
+                for (const item of uniqueWords) {
+                    try {
+                        const prompt = `Cung cấp nghĩa tiếng Việt, phiên âm IPA, và một câu ví dụ tiếng Anh cho từ "${item.word}" (cấp độ ${item.level}). Trả về một đối tượng JSON với các thuộc tính "ipa", "meaning", "example", và "type".`;
+                        const payload = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { "ipa": { "type": "STRING" }, "meaning": { "type": "STRING" }, "example": { "type": "STRING" }, "type": { "type": "STRING" } }, required: ["ipa", "meaning", "example", "type"] } } };
+                        const data = await callGeminiAPI(payload);
+                        newVocabData.push({ ...item, ...data });
+                    } catch (error) {
+                        console.error(`Lỗi khi xử lý từ "${item.word}":`, error);
+                        // Optionally skip failed words or add them with an error message
+                    }
+                }
                 
+                generatedVocabData = newVocabData;
                 renderGeneratedVocab(generatedVocabData);
                 vocabActionButtons.classList.remove('hidden');
                 saveFlashcardsBtn.textContent = "Lưu thành Bộ Flashcard";
                 vocabLoading.classList.add('hidden');
-                showCustomAlert("Đã tạo flashcard xong! Bạn có thể xem lại và lưu.");
+                showCustomAlert(`Đã trích xuất thành công ${newVocabData.length} từ! Bạn có thể xem lại và lưu.`);
             }
 
             // --- API & Utility Functions ---
@@ -691,7 +694,6 @@
                 let popupLeft = targetRect.left + (targetRect.width / 2) - (popupWidth / 2) - mainRect.left;
                 let popupTop = (targetRect.bottom - mainRect.top) + padding;
                 
-                // *** FIXED: Constrain popup within viewport ***
                 popupLeft = Math.max(padding, Math.min(popupLeft, mainContent.clientWidth - popupWidth - padding));
                 if (popupTop + popupHeight > mainContent.clientHeight) {
                     popupTop = (targetRect.top - mainRect.top) - popupHeight - padding;
@@ -796,7 +798,7 @@
                 applyTheme(isDark ? 'dark' : 'light');
             });
 
-            // --- Initial Load ---
+            // --- Initial Load & Event Listeners ---
             createTab.addEventListener('click', () => switchTab('create'));
             reviewTab.addEventListener('click', () => switchTab('review'));
             reviewFlashcardsBtn.addEventListener('click', () => switchReviewSubSection('flashcardList'));
@@ -806,7 +808,10 @@
             cancelEditBtn.addEventListener('click', resetVocabForm);
             generateDocumentBtn.addEventListener('click', generateDocument);
             saveDocumentBtn.addEventListener('click', saveDocument);
-            createFlashcardFromDocumentBtn.addEventListener('click', createFlashcardFromDocument);
+            createFlashcardFromDocumentBtn.addEventListener('click', () => {
+                sourceDocumentTitleForFlashcard = currentDocumentTitle.textContent;
+                createFlashcardFromDocument();
+            });
             backToFlashcardListBtn.addEventListener('click', () => switchReviewSubSection('flashcardList'));
             flashcardInner.addEventListener('click', () => flashcardInner.classList.toggle('rotate-y-180'));
             prevCardBtn.addEventListener('click', () => navigateFlashcard('prev'));
@@ -815,6 +820,13 @@
             backToDocumentListBtn.addEventListener('click', () => switchReviewSubSection('documentList'));
             customAlertCloseBtn.addEventListener('click', () => customAlertOverlay.classList.remove('is-visible'));
             document.getElementById('guideBtn').addEventListener('click', showGuide);
+            
+            // *** FIXED: Listener to close popup when clicking outside ***
+            document.addEventListener('click', (event) => {
+                if (!wordPopup.contains(event.target) && !event.target.closest('.highlighted-word')) {
+                    wordPopup.classList.remove('is-visible');
+                }
+            }, true); // Use capture phase to catch click before it bubbles
 
             // Load saved theme or default to system preference
             const savedTheme = localStorage.getItem('theme');
