@@ -270,6 +270,7 @@
             let currentFlashcardSet = [];
             let currentCardIndex = 0;
             let sourceDocumentTitleForFlashcard = null;
+            let isFetchingWordInfo = false; // Lock for popup API calls
 
             // --- LocalStorage Helpers ---
             const getStoredFlashcardSets = () => JSON.parse(localStorage.getItem('vocabBoostFlashcards') || '[]');
@@ -400,20 +401,22 @@
                 const allSets = getStoredFlashcardSets();
                 
                 let title;
+                let level = "N/A";
                 let isFromDoc = false;
+
                 if (sourceDocumentTitleForFlashcard) {
                     title = `Từ vựng từ: ${sourceDocumentTitleForFlashcard}`;
                     isFromDoc = true;
                 } else {
-                    const level = generatedVocabData[0]?.level || 'N/A';
+                    level = document.querySelector('input[name="vocabLevel"]:checked').value;
                     title = `Bộ từ vựng cấp độ ${level} (${generatedVocabData.length} từ)`;
                 }
 
                 if (editingFlashcardSetId) {
                     const setIndex = allSets.findIndex(s => s.id === editingFlashcardSetId);
-                    if (setIndex > -1) allSets[setIndex] = { ...allSets[setIndex], title, vocabularies: generatedVocabData, timestamp: new Date().toISOString(), isFromDocument: isFromDoc };
+                    if (setIndex > -1) allSets[setIndex] = { ...allSets[setIndex], title, level, vocabularies: generatedVocabData, timestamp: new Date().toISOString(), isFromDocument: isFromDoc };
                 } else {
-                    allSets.push({ id: Date.now(), title, vocabularies: generatedVocabData, timestamp: new Date().toISOString(), isFromDocument: isFromDoc });
+                    allSets.push({ id: Date.now(), title, level, vocabularies: generatedVocabData, timestamp: new Date().toISOString(), isFromDocument: isFromDoc });
                 }
 
                 saveStoredFlashcardSets(allSets);
@@ -458,10 +461,8 @@
                         borderColorClass = 'border-teal-500';
                     } else if(set.level === 'B2') {
                         borderColorClass = 'border-blue-500';
-                    } else if(set.level === 'C1') {
-                        borderColorClass = 'border-orange-500';
-                    } else if(set.level === 'C2') {
-                        borderColorClass = 'border-red-500';
+                    } else if(set.level === 'C1/C2') { // Handle C1/C2 case
+                        borderColorClass = 'border-purple-500';
                     }
 
                     setElement.className = `card p-6 rounded-2xl shadow-lg flex flex-col justify-between hover:bg-gray-400/20 border-l-4 ${borderColorClass}`;
@@ -646,7 +647,6 @@
                         newVocabData.push({ ...item, ...data });
                     } catch (error) {
                         console.error(`Lỗi khi xử lý từ "${item.word}":`, error);
-                        // Optionally skip failed words or add them with an error message
                     }
                 }
                 
@@ -685,6 +685,9 @@
             }
             
             async function showWordPopup(word, level, target) {
+                if (isFetchingWordInfo) return; // Debounce/lock mechanism
+                isFetchingWordInfo = true;
+
                 const popupContent = document.getElementById('popupContent');
                 popupContent.innerHTML = `<div class="flex items-center justify-center gap-2 text-secondary text-sm"><span class="loading-spinner w-4 h-4 border-2"></span> Đang tải...</div>`;
                 wordPopup.classList.add('is-visible');
@@ -720,6 +723,8 @@
                     popupContent.querySelector('.pronounce-word-popup').addEventListener('click', () => pronounceText(word));
                 } catch (error) {
                     popupContent.innerHTML = `<p class="text-red-500">Không thể lấy thông tin. Vui lòng thử lại.</p>`;
+                } finally {
+                    isFetchingWordInfo = false; // Release the lock
                 }
             }
 
@@ -821,12 +826,14 @@
             customAlertCloseBtn.addEventListener('click', () => customAlertOverlay.classList.remove('is-visible'));
             document.getElementById('guideBtn').addEventListener('click', showGuide);
             
-            // *** FIXED: Listener to close popup when clicking outside ***
+            vocabTopicInput.addEventListener('keyup', (e) => { if(e.key === 'Enter') generateVocabBtn.click() });
+            documentTopicInput.addEventListener('keyup', (e) => { if(e.key === 'Enter') generateDocumentBtn.click() });
+
             document.addEventListener('click', (event) => {
                 if (!wordPopup.contains(event.target) && !event.target.closest('.highlighted-word')) {
                     wordPopup.classList.remove('is-visible');
                 }
-            }, true); // Use capture phase to catch click before it bubbles
+            }, true);
 
             // Load saved theme or default to system preference
             const savedTheme = localStorage.getItem('theme');
